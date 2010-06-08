@@ -3,6 +3,7 @@
  */
 
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
@@ -69,19 +70,17 @@ public class Exon
 	 *  Reads file until the next chromosome
 	 *  Loads into an array of Exon objects
 	 */
-	public static ArrayList<Exon> readExon(BufferedReader br, int chromosome, int numberOfLines)
+	public static ArrayList<Exon> readExon(String exonFileName, int chromosome)
 	{
 		ArrayList<Exon> exons = new ArrayList<Exon>();
-		String line = null; int lineCount = 0;
+		String line = null; 
 		try
 		{
+			BufferedReader br = new BufferedReader(new FileReader(exonFileName));
 			while( (line = br.readLine()) != null)
 			{
 				Exon exon = new Exon(line);
 				exons.add(exon);
-				lineCount ++;
-				if (lineCount >= numberOfLines)
-					break;
 			}
 		} catch (IOException e)
 		{

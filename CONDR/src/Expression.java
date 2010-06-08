@@ -5,6 +5,7 @@
  */
 
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -37,20 +38,18 @@ public class Expression
 	 * Goes through input file (br) obtained from mapping,
 	 * parses and stores the data in an array
 	 */
-	public static ArrayList<Expression> readExon(BufferedReader br, int chromosome, int numberOfLines)
+	public static ArrayList<Expression> readExon(String expressionFileName, int chromosome)
 	{
 		ArrayList<Expression> exprs = new ArrayList<Expression>();
 		String line = null;
-		int lineCount = 0;
 		try
 		{
+			BufferedReader br = new BufferedReader(new FileReader(expressionFileName));
+
 			while( (line = br.readLine()) != null)
 			{
 				Expression expr = new Expression(line);
 				exprs.add(expr);
-				lineCount ++;
-				if (lineCount >= numberOfLines)
-					break;
 			}
 		} catch (IOException e)
 		{
