@@ -5,6 +5,7 @@
  */
 
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,14 +41,14 @@ public class MappedReads
 	 * Goes through input file (br) which is in SAM format, obtained from mapping,
 	 * parses and stores the data in an array
 	 */
-	public static ArrayList<MappedReads> readMappedReads(BufferedReader br, int chromosome, int numberOfLines)
+	public static ArrayList<MappedReads> readMappedReads(String mappedReadsFileName, int chromosome)
 	{
 		ArrayList<MappedReads> reads = new ArrayList<MappedReads>();
 		String line = null;
-		int lineCount = 0;
 		//int currentChromosome = chromosome;
 		try
 		{
+			BufferedReader br = new BufferedReader(new FileReader(mappedReadsFileName));
 			while( (line = br.readLine()) != null)
 			{
 				if (line.startsWith("@")) // header
@@ -58,9 +59,6 @@ public class MappedReads
 				MappedReads read = new MappedReads(line);
 				//currentChromosome = read.chr;
 				reads.add(read);
-				lineCount ++;
-				if (lineCount >= numberOfLines)
-					break;
 			}
 
 			/*

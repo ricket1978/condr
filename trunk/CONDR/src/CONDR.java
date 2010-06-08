@@ -27,65 +27,34 @@ public class CONDR
 		/*
 		 * All files should be sorted in chromosomal order
 		 */
-
-		System.out.println("Preprocessing input files to find chromosome boundaries...");
-		System.out.println("\tExons file..");
-		ArrayList<Integer> exonFileChrBoundaries = getChromosomalBoundaries(exonFileName, 0);
-		ArrayList<Integer> exprFileChrBoundaries = new ArrayList<Integer>();
-		if (!usingPileup)
-		{
-			System.out.println("\tExpression file..");
-			exprFileChrBoundaries = getChromosomalBoundaries(expressionFileName, 2);
-		}
-		System.out.println("\tMapped reads file..");
-		ArrayList<Integer> readsFileChrBoundaries = new ArrayList<Integer>();
-		readsFileChrBoundaries = getChromosomalBoundaries(mappedReadsFileName, (usingPileup?0:2));
-
-
 		try
 		{
-			BufferedReader inputExons = new BufferedReader(new FileReader(exonFileName));
-			BufferedReader inputExpr = null;
-			if (!usingPileup)
-				inputExpr = new BufferedReader(new FileReader(expressionFileName));
-			BufferedReader inputSAMData = new BufferedReader(new FileReader(mappedReadsFileName));
-
-			double currentTime = 0, totalExonReadTime = 0, totalExprReadTime = 0, totalFPKMCalcTime = 0, totalReadsReadTime = 0, totalSNPsCalcTime = 0, totalRefCalcTime = 0;
-			int numberOfExpr = 0, numberOfReads = 0;
-
 			for (int chromosome : chromosomes )
 			{
-				int arrayPosition = chromosome - chromosomes.get(0) + 1;
+				double currentTime = 0, totalExonReadTime = 0, totalExprReadTime = 0, totalFPKMCalcTime = 0, totalReadsReadTime = 0, totalSNPsCalcTime = 0, totalRefCalcTime = 0;
+				int numberOfExpr = 0, numberOfReads = 0;
 
 				System.out.println("Chromosome " + chromosome);
 				System.out.println("Reading exons file....");
-				int numberOfLines = exonFileChrBoundaries.get(arrayPosition) - exonFileChrBoundaries.get(arrayPosition - 1);
 				currentTime = System.currentTimeMillis();
-				Exons = Exon.readExon(inputExons, chromosome, numberOfLines);
+				Exons = Exon.readExon(exonFileName, chromosome);
 				totalExonReadTime = (System.currentTimeMillis() - currentTime)/1000F;
 				Exon.sortExons(Exons);
 
+				// TODO add chromosome checks
 				if (usingPileup)
 				{
 					System.out.println("Reading pileup file, calculating coverage and SNPs....");
 					currentTime = System.currentTimeMillis();
-					Pileup.readData(Exons, inputSAMData);
+					Pileup.readData(Exons, mappedReadsFileName);
 					totalReadsReadTime = (System.currentTimeMillis() - currentTime)/1000F;
-
-					/*
-					System.out.println("Calculating coverage and SNPs....");
-					currentTime = System.currentTimeMillis();
-					getSNPs(Exons, readsData); 
-					totalSNPsCalcTime = (System.currentTimeMillis() - currentTime)/1000F;
-					*/
 				}
 				else
 				{
 					System.out.println("Reading expression file....");
-					numberOfLines = exprFileChrBoundaries.get(arrayPosition) - exprFileChrBoundaries.get(arrayPosition - 1);
 					ArrayList<Expression> Expressions = new ArrayList<Expression>();
 					currentTime = System.currentTimeMillis();
-					Expressions = Expression.readExon(inputExpr, chromosome, numberOfLines);
+					Expressions = Expression.readExon(expressionFileName, chromosome);
 					totalExprReadTime = (System.currentTimeMillis() - currentTime)/1000F;
 					numberOfExpr = Expressions.size();
 
@@ -96,10 +65,9 @@ public class CONDR
 					Expressions.removeAll(Expressions); // explicitly deleting to free up memory
 
 					System.out.println("Reading mapped reads SAM file....");
-					numberOfLines = readsFileChrBoundaries.get(arrayPosition) - readsFileChrBoundaries.get(arrayPosition - 1);
 					ArrayList<MappedReads> mappedReads = new ArrayList<MappedReads>();
 					currentTime = System.currentTimeMillis();
-					mappedReads = MappedReads.readMappedReads(inputSAMData, chromosome, numberOfLines);
+					mappedReads = MappedReads.readMappedReads(mappedReadsFileName, chromosome);
 					totalReadsReadTime = (System.currentTimeMillis() - currentTime)/1000F;
 					MappedReads.sort(mappedReads);
 					numberOfReads = mappedReads.size();
@@ -164,25 +132,6 @@ public class CONDR
 	}
 
 
-	private static void getSNPs(ArrayList<Exon> exons, HashMap<Integer, Pileup> readsData)
-	{
-		// TODO Auto-generated method stub
-		for(Exon e : exons)
-		{
-			for(int position = e.posLeft; position <= e.posRight; position++)
-			{
-				// check if it's in the pileup data
-				Pileup p = readsData.get(position);
-				if (p == null)
-					continue;
-				e.FPKM += p.coverage;
-				e.SNPPositions.put(position, p.heterozygous);
-			}
-			e.SNPs = e.SNPPositions.size()/e.length();
-		}
-	}
-
-
 	private static void parseArguments(String arguments[])
 	{
 		/*
@@ -244,49 +193,6 @@ public class CONDR
 			e.printStackTrace();
 		}
 
-	}
-
-	private static ArrayList<Integer> getChromosomalBoundaries(String fileName, int chrColumnNumber)
-	{
-		ArrayList<Integer> boundaries = new ArrayList<Integer>();
-		String line = "";
-
-		try
-		{
-			BufferedReader br = new BufferedReader(new FileReader(fileName));
-			int prevChr = 0;
-			int lineNumber = 1;
-
-			while( (line = br.readLine()) != null)
-			{
-				int chr;
-				try
-				{
-					chr = Integer.parseInt((line.split("\t")[chrColumnNumber].substring(3)));
-				}catch(NumberFormatException e)
-				{
-					chr = 0; // for now, ignore X, Y, M chromosomes
-				}
-
-				if (chr != prevChr)
-					boundaries.add(lineNumber-1);
-				lineNumber ++;
-				prevChr = chr;
-			}
-			boundaries.add(lineNumber);
-
-		} catch (FileNotFoundException e)
-		{
-			System.err.println("File Not Found: " + e.getMessage());
-			e.printStackTrace();
-		} catch (IOException e)
-		{
-			System.err.println("IO Exception: " + e.getMessage());
-			e.printStackTrace();
-		}
-
-
-		return boundaries;
 	}
 
 }

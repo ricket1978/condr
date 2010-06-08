@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,14 +50,16 @@ public class Pileup
 	/*
 	 * Reads the pileup and simultaneously updates the exon lists with appropriate values
 	 */
-	public static void readData(ArrayList<Exon> exons, BufferedReader br)
+	public static void readData(ArrayList<Exon> exons, String pileupFileName)
 	{
 		int exonIndex = 0;
 		ArrayList<Pileup> Pileups = new ArrayList<Pileup>();
 
-		String line;
+		String line = null;
 		try
 		{
+			BufferedReader br = new BufferedReader(new FileReader(pileupFileName));
+
 			Exon e = exons.get(exonIndex);
 			while( (line = br.readLine()) != null)
 			{
