@@ -16,7 +16,7 @@ public class Exon
 	int posLeft;
 	int posRight;
 	String geneName;
-	int FPKM;
+	double FPKM;
 	String referenceSequence;
 	double SNPs;
 	int numberOfOverlappingReads;
@@ -311,6 +311,14 @@ public class Exon
 			}
 			};
 			Collections.sort(data, order);
+	}
+
+	public boolean containsPosition(int position)
+	{
+		if (this.posLeft <= position && position <= this.posRight)
+			return true;
+		else
+			return false;
 	}
 
 }
