@@ -68,8 +68,9 @@ public class CONDR
 				if (usingPileup)
 				{
 					System.out.println("Reading pileup file, calculating coverage and SNPs....");
+					currentTime = System.currentTimeMillis();
 					Pileup.readData(Exons, inputSAMData);
-					//System.out.println(readsData.size());
+					totalReadsReadTime = (System.currentTimeMillis() - currentTime)/1000F;
 
 					/*
 					System.out.println("Calculating coverage and SNPs....");
