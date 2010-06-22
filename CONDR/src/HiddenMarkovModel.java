@@ -15,25 +15,7 @@ public class HiddenMarkovModel
 	// Initialize all the states
 	public static void initialize(ArrayList<Exon> exons)
 	{
-		ArrayList<Double> avgs = calculateAverages(exons);
-		double expected_RPKM = avgs.get(0);
-		double expected_SNPs = avgs.get(1);
-		States = State.initializeStates(expected_RPKM, expected_SNPs);
-	}
-
-	private static ArrayList<Double> calculateAverages(ArrayList<Exon> exons)
-	{
-		double rpkm = 0;
-		double snps = 0;
-		for(Exon e : exons)
-		{
-			rpkm += e.FPKM;
-			snps += e.SNPs;
-		}
-		ArrayList<Double> returnValues = new ArrayList<Double>();
-		returnValues.add(rpkm/exons.size());
-		returnValues.add(snps/exons.size());
-		return(returnValues);
+		States = State.initializeStates();
 	}
 
 	public static void getStates(ArrayList<Exon> exons, ArrayList<Exon> expectedValues)

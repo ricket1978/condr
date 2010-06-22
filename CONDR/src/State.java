@@ -24,8 +24,6 @@ public class State
 	static double deltaRPKM;
 	static double deltaSNPs;
 	static double stdDevRPKM;
-	static double E_RPKM;
-	static double E_SNPs;
 
 	static HashMap<State, HashMap<State, Double>> transitionProbabilities = new HashMap<State, HashMap<State, Double>>();
 
@@ -67,41 +65,14 @@ public class State
 		return transitionProb;
 	}
 
-	/* 
-	 * Gets the probability of emitting the observations for RPKM and SNP from state s
-	 */
-	public static double getEmissionProbability(double observedRPKM, double observedSNPs, State s)
-	{
-		double observedRPKMRatio = observedRPKM/State.E_RPKM;
-		double observedSNPRatio = observedSNPs/State.E_SNPs;
-
-		// Bin the observed values between (Expectation - Delta) and (Expectation + Delta)
-		// We have allowed a Delta deviation from the expectation to allow for 
-		// less stringent cut-off values
-		// Expectation & Delta values are computed from prior observations such that the 
-		// probability of being within that range is 95%
-		// Thus, if the observation is within Delta of the Expectation, there is a 95% 
-		// probability of it having been from a distribution with the state's parameters
-		// If not, it is 5%
-		if (observedRPKMRatio >= s.rpkmRatio - State.deltaRPKM && 
-				observedRPKMRatio <= s.rpkmRatio + State.deltaRPKM &&
-				observedSNPRatio >= s.snpRatio - State.deltaSNPs &&
-				observedSNPRatio <= s.snpRatio + State.deltaSNPs )
-			return 0.95;
-		else
-			return 0.05;
-	}
-
 	/*
 	 * Initializes all the state information: expected RPKM, SNP values and the allowed deviations from expectation
 	 * This information is based on prior observations
 	 * Contains Hard coded assumptions about the data
 	 */
-	public static ArrayList<State> initializeStates(double expected_RPKM, double expected_SNPs)
+	public static ArrayList<State> initializeStates()
 	{
 		ArrayList<State> states = new ArrayList<State>();
-		State.E_RPKM = expected_RPKM;
-		State.E_SNPs = expected_SNPs;
 		
 		State.deltaRPKM = 0.25;
 		State.deltaSNPs = 0.05;
@@ -209,13 +180,13 @@ public class State
 	{
 		switch(this.stateName)
 		{
-			case State.NORMAL: return "Normal"; 
-			case State.HOMOZYGOUS_DELETE: return "Homozygous Deletion"; 
+			case State.NORMAL: 				return "Normal"; 
+			case State.HOMOZYGOUS_DELETE: 	return "Homozygous Deletion"; 
 			case State.HETEROZYGOUS_DELETE: return "Heterozygous Deletion"; 
-			case State.COPY_NEUTRAL_LOH: return "Copy Neutral Loss of Heterozygosity"; 
-			case State.INSERTION: return "Insertion"; 
-			case State.CHROMATIN_CHANGE: return "Chromatin Change"; 
-			case State.UNKNOWN_TYPE: return "Unknown Type"; 
+			case State.COPY_NEUTRAL_LOH: 	return "Copy Neutral Loss of Heterozygosity"; 
+			case State.INSERTION: 			return "Insertion"; 
+			case State.CHROMATIN_CHANGE: 	return "Chromatin Change"; 
+			case State.UNKNOWN_TYPE: 		return "Unknown Type"; 
 		}
 		return "";
 	}
@@ -235,5 +206,28 @@ public class State
 		State that = (State)aThat;
 
 		return	(this.stateName == that.stateName);
+	}
+
+	public static double getEmissionProbability(double observedFPKM, double observedSNPs, double expectedFPKM,
+			double expectedSNPs, State s)
+	{
+		double observedRPKMRatio = observedFPKM/expectedFPKM;
+		double observedSNPRatio = observedSNPs/expectedSNPs;
+
+		// Bin the observed values between (Expectation - Delta) and (Expectation + Delta)
+		// We have allowed a Delta deviation from the expectation to allow for 
+		// less stringent cut-off values
+		// Expectation & Delta values are computed from prior observations such that the 
+		// probability of being within that range is 95%
+		// Thus, if the observation is within Delta of the Expectation, there is a 95% 
+		// probability of it having been from a distribution with the state's parameters
+		// If not, it is 5%
+		if (observedRPKMRatio >= s.rpkmRatio - State.deltaRPKM && 
+				observedRPKMRatio <= s.rpkmRatio + State.deltaRPKM &&
+				observedSNPRatio >= s.snpRatio - State.deltaSNPs &&
+				observedSNPRatio <= s.snpRatio + State.deltaSNPs )
+			return 0.95;
+		else
+			return 0.05;
 	}
 }
