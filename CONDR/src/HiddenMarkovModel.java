@@ -21,29 +21,6 @@ public class HiddenMarkovModel
 		States = State.initializeStates(expected_RPKM, expected_SNPs);
 	}
 
-	/*
-	// given the observations (RPKM and SNPs) and the current state
-	// get the next state
-	public static State getNextState(int RPKM, double SNPs, State currentState, int lengthOfIntron)
-	{
-		State maxState = null;
-		double maxProbability = 0;
-		for (State s: States)
-		{
-			double prob = State.getTransitionProbability(currentState, s, lengthOfIntron) / State.getEmissionProbability(RPKM, SNPs, s);
-			if ( prob > maxProbability )
-			{
-				maxState = s;
-				maxProbability = prob;
-			}
-		}
-		if (Math.random() < maxProbability)
-			return maxState;
-		else
-			return currentState;
-	}
-	 */
-
 	private static ArrayList<Double> calculateAverages(ArrayList<Exon> exons)
 	{
 		double rpkm = 0;
