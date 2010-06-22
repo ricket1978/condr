@@ -30,7 +30,7 @@ public class Exon
 	/*
 	 *  parse a line of data (modified SAM format) and input appropriate fields
 	 */
-	Exon(String dataLine)
+	Exon(String dataLine, boolean fromExonFile)
 	{
 		String[] fields = dataLine.split("\t");
 		try
@@ -40,14 +40,25 @@ public class Exon
 		{
 			this.chr = 0; // for now, ignore X, Y, M chromosomes
 		}
-		this.posLeft = Integer.parseInt(fields[5]);
-		this.posRight = Integer.parseInt(fields[6]);
-		this.geneName = fields[7];
-		this.FPKM = 0;
-		this.SNPs = 0;
-		this.reads = new ArrayList<MappedReads>();
-		this.numberOfOverlappingReads = 0;
-		this.SNPPositions = new HashMap<Integer, Integer>();
+		if (fromExonFile)
+		{
+			this.posLeft = Integer.parseInt(fields[1]);
+			this.posRight = Integer.parseInt(fields[2]);
+			this.geneName = fields[3];
+			this.FPKM = Double.parseDouble(fields[5]);
+			this.SNPs = Double.parseDouble(fields[4]);
+		}
+		else
+		{
+			this.posLeft = Integer.parseInt(fields[5]);
+			this.posRight = Integer.parseInt(fields[6]);
+			this.geneName = fields[7];
+			this.FPKM = 0;
+			this.SNPs = 0;
+			this.reads = new ArrayList<MappedReads>();
+			this.numberOfOverlappingReads = 0;
+			this.SNPPositions = new HashMap<Integer, Integer>();
+		}
 		this.state = new State(); 
 	}
 
@@ -79,7 +90,7 @@ public class Exon
 			BufferedReader br = new BufferedReader(new FileReader(exonFileName));
 			while( (line = br.readLine()) != null)
 			{
-				Exon exon = new Exon(line);
+				Exon exon = new Exon(line, false);
 				exons.add(exon);
 			}
 		} catch (IOException e)
@@ -318,6 +329,83 @@ public class Exon
 			return true;
 		else
 			return false;
+	}
+
+	public String inputData()
+	{
+		return(this.chr + "\t" + this.posLeft + "\t" + this.posRight + "\t" + this.geneName + "\t" + 
+				this.SNPs + "\t" + this.FPKM);
+
+	}
+
+	public static ArrayList<Exon> readAndStoreExonFile(String exonFileName, int chromosome)
+	{
+		ArrayList<Exon> exons = new ArrayList<Exon>();
+		String line = null; 
+		try
+		{
+			BufferedReader br = new BufferedReader(new FileReader(exonFileName));
+			while( (line = br.readLine()) != null)
+			{
+				Exon exon = new Exon(line, true);
+				exons.add(exon);
+			}
+		} catch (IOException e)
+		{
+			System.err.println("Error: Unable to process exon file");
+			e.printStackTrace();
+			System.exit(0);
+		}
+
+		return exons;
+	}
+
+	public static ArrayList<Exon> calculateExpectedValues(ArrayList<String> baselineExonFileNames, int chromosome)
+	{
+		ArrayList<Exon> baselineExonValues = new ArrayList<Exon>();
+
+		// for each file, 'add' the values to the baseline
+		for(String fileName : baselineExonFileNames)
+		{
+			String line = null; 
+			int exonIndex = 0;
+			try
+			{
+				BufferedReader br = new BufferedReader(new FileReader(fileName));
+				while( (line = br.readLine()) != null)
+				{
+					// first file read
+					Exon e = new Exon(line, true);
+					if (fileName.equals(baselineExonFileNames.get(0)))
+					{
+						baselineExonValues.add(e);
+					}
+					else
+					{
+						Exon baselineE = baselineExonValues.get(exonIndex);
+						baselineE.FPKM += e.FPKM;
+						baselineE.SNPs += e.SNPs;
+						baselineExonValues.set(exonIndex, baselineE);
+					}
+					exonIndex ++;
+				}
+			} catch (IOException e)
+			{
+				System.err.println("Error: Unable to process exon file");
+				e.printStackTrace();
+				System.exit(0);
+			}
+		}
+
+		// average the values
+		for(Exon e: baselineExonValues)
+		{
+			//TODO: remove System.out.println(e);
+			e.SNPs = e.SNPs/baselineExonFileNames.size();
+			e.FPKM = e.FPKM/baselineExonFileNames.size();
+		}
+
+		return baselineExonValues;
 	}
 
 }
