@@ -5,12 +5,11 @@ import java.util.*;
 public class CONDR
 {
 	static ArrayList<Exon> Exons = new ArrayList<Exon>();
+	static ArrayList<Exon> ExpectedValues = new ArrayList<Exon>();
 
 	static String exonFileName = "";
-	static String expressionFileName = "";
-	static String mappedReadsFileName = "";
-	static String referenceDirectory = "";
 	static String outputFileName = "";
+	static ArrayList<String> baselineExonFileNames = new ArrayList<String>();
 	static ArrayList<Integer> chromosomes = new ArrayList<Integer>();
 	static boolean printTimingMetrics = false;
 	static boolean usingPileup = false;
@@ -20,6 +19,9 @@ public class CONDR
 		double totalTime;
 		double startTime = System.currentTimeMillis();
 
+		/*
+		 * -c "16-16" -e "WZ1034.region16.out.exon" -t -b "WZ186.region16.out.exon,WZ740.region16.out.exon,WZ3313.region16.out.exon,WZ561389.region16.out.exon"
+		 */
 
 		parseArguments( args );
 
@@ -31,76 +33,29 @@ public class CONDR
 		{
 			for (int chromosome : chromosomes )
 			{
-				double currentTime = 0, totalExonReadTime = 0, totalExprReadTime = 0, totalFPKMCalcTime = 0, totalReadsReadTime = 0, totalSNPsCalcTime = 0, totalRefCalcTime = 0;
-				int numberOfExpr = 0, numberOfReads = 0;
-
+				double currentTime = 0, totalExonReadTime = 0;
+				
 				System.out.println("Chromosome " + chromosome);
-				System.out.println("Reading exons file....");
+				System.out.println("Calculating expected values from given files....");
+				ExpectedValues = Exon.calculateExpectedValues(baselineExonFileNames, chromosome);
+				Exon.sortExons(ExpectedValues);
+				
+				System.out.println("Reading exon with measurements file....");
 				currentTime = System.currentTimeMillis();
-				Exons = Exon.readExon(exonFileName, chromosome);
+				Exons = Exon.readAndStoreExonFile(exonFileName, chromosome);
 				totalExonReadTime = (System.currentTimeMillis() - currentTime)/1000F;
 				Exon.sortExons(Exons);
 
 				// TODO add chromosome checks
-				if (usingPileup)
-				{
-					System.out.println("Reading pileup file, calculating coverage and SNPs....");
-					currentTime = System.currentTimeMillis();
-					Pileup.readData(Exons, mappedReadsFileName);
-					totalReadsReadTime = (System.currentTimeMillis() - currentTime)/1000F;
-				}
-				else
-				{
-					System.out.println("Reading expression file....");
-					ArrayList<Expression> Expressions = new ArrayList<Expression>();
-					currentTime = System.currentTimeMillis();
-					Expressions = Expression.readExon(expressionFileName, chromosome);
-					totalExprReadTime = (System.currentTimeMillis() - currentTime)/1000F;
-					numberOfExpr = Expressions.size();
-
-					System.out.println("Calculating FPKMs....");
-					currentTime = System.currentTimeMillis();
-					Exon.getFPKM(Expressions, Exons);
-					totalFPKMCalcTime = (System.currentTimeMillis() - currentTime)/1000F;
-					Expressions.removeAll(Expressions); // explicitly deleting to free up memory
-
-					System.out.println("Reading mapped reads SAM file....");
-					ArrayList<MappedReads> mappedReads = new ArrayList<MappedReads>();
-					currentTime = System.currentTimeMillis();
-					mappedReads = MappedReads.readMappedReads(mappedReadsFileName, chromosome);
-					totalReadsReadTime = (System.currentTimeMillis() - currentTime)/1000F;
-					MappedReads.sort(mappedReads);
-					numberOfReads = mappedReads.size();
-
-					System.out.println("Reading reference genome file....");
-					String referenceFileName = referenceDirectory + "/chr" + chromosome + ".fa";
-					currentTime = System.currentTimeMillis();
-					RandomAccessFile inputReference = new RandomAccessFile(referenceFileName, "r");
-					for(Exon e : Exons)
-					{
-						e.getReferenceSequence(inputReference);
-					}
-					totalRefCalcTime = (System.currentTimeMillis() - currentTime)/1000F;
-
-					System.out.println("Calculating SNPs....");
-					currentTime = System.currentTimeMillis();
-					Exon.getSNPs(Exons, mappedReads); 
-					totalSNPsCalcTime = (System.currentTimeMillis() - currentTime)/1000F;
-					mappedReads.removeAll(mappedReads);
-				}
-
 				System.out.println("Calculating States....");
 				currentTime = System.currentTimeMillis();
-				HiddenMarkovModel.getStates(Exons);
+				HiddenMarkovModel.getStates(Exons, ExpectedValues);
 				double totalStateCalcTime = (System.currentTimeMillis() - currentTime)/1000F;
 
 				// Print output
 				if (outputFileName.equals(""))
-				{
-					// print to stdout
-					for(Exon e : Exons)
-						System.out.println(e);
-				}
+					for(int i = 0; i<Exons.size(); i++) //for(Exon e : Exons)
+						System.out.println(Exons.get(i) + "\t" + ExpectedValues.get(i).FPKM + "\t" + ExpectedValues.get(i).SNPs);
 				else
 				{
 					Writer output = new BufferedWriter(new FileWriter(outputFileName));
@@ -116,11 +71,6 @@ public class CONDR
 					totalTime = (endTime - startTime)/1000F;
 					System.out.println("Total Time: " + totalTime);
 					System.out.println("Time for reading exons file       : " + totalExonReadTime + ", " + Exons.size());
-					System.out.println("Time for reading expression file  : " + totalExprReadTime + ", " + numberOfExpr);
-					System.out.println("Time for reading mapped reads file: " + totalReadsReadTime + ", " + numberOfReads);
-					System.out.println("Time for getting reference seq    : " + totalRefCalcTime);
-					System.out.println("Time for calculating FPKM         : " + totalFPKMCalcTime);
-					System.out.println("Time for calculating Num of SNPs  : " + totalSNPsCalcTime);
 					System.out.println("Time for calculating States       : " + totalStateCalcTime);
 				}
 			}
@@ -131,7 +81,6 @@ public class CONDR
 		} 
 	}
 
-
 	private static void parseArguments(String arguments[])
 	{
 		/*
@@ -140,27 +89,18 @@ public class CONDR
 		 * -ex <expressions file>
 		 * -sam <mapped reads, sam file>
 		 * -ref <reference directory>
+		 * -pileup <pileup file>
 		 * -c <chromosomes (start-end)>
 		 * -t (prints timing metrics)
 		 * -o <output file name>
+		 * -b <comma separated baseline file names>
 		 */
 		try {
-			for(int index = 0; index < arguments.length; index ++)
+ 			for(int index = 0; index < arguments.length; index ++)
 			{
 				String arg = arguments[index];
 				if (arg.equals("-e"))
 					exonFileName = arguments[index + 1];
-				else if (arg.equals("-ex"))
-					expressionFileName = arguments[index + 1];
-				else if (arg.equals("-sam"))
-					mappedReadsFileName = arguments[index + 1];
-				else if (arg.equals("-pileup"))
-				{
-					usingPileup = true;
-					mappedReadsFileName = arguments[index + 1];
-				}
-				else if (arg.equals("-ref"))
-					referenceDirectory = arguments[index + 1];
 				else if (arg.equals("-t"))
 					printTimingMetrics = true;
 				else if (arg.equals("-o"))
@@ -173,19 +113,25 @@ public class CONDR
 						chromosomes.add(c);
 					}
 				}
+				else if (arg.equals("-b"))
+				{
+					String[] fields = arguments[index+1].split(",");
+					for (String f : fields)
+					{
+						baselineExonFileNames.add(f);
+					}
+					
+				}
 			}
 
 			if (exonFileName.equals("") 
-					|| referenceDirectory.equals("") || chromosomes.isEmpty()
-					|| ((!usingPileup && (expressionFileName.equals("") || mappedReadsFileName.equals(""))) 
-							&& (usingPileup && mappedReadsFileName.equals("")))) 
+					|| chromosomes.isEmpty()
+			) 
 			{
 				System.err.println("Improper Usage:");
-				System.err.println("java exonSeg -e <exonFileName> " + "-ex <expressions file> " + 
-						"-sam <mapped reads, sam file> " + "-ref <reference directory> " + 
+				System.err.println("java CONDR -e <exonFileName> " + 
 						"-c <chromosomes (start-end)> " + "[-t] " + "[-o <output file name>]");
 				System.exit(0);
-				//throw(new Exception("Improper Usage"));
 			}
 		} catch(Exception e)
 		{
