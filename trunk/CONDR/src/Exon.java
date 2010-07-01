@@ -1,3 +1,5 @@
+package CONDR.src;
+
 /*
  * Stores and manipulates relevant exon information
  */

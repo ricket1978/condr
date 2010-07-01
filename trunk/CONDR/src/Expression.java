@@ -1,3 +1,5 @@
+package CONDR.src;
+
 /*
  * Stores necessary information about RNA expression data for the short read fragments 
  * that have already been mapped to the reference genome
