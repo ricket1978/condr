@@ -1,3 +1,5 @@
+package CONDR.src;
+
 /*
  * Calculates and stores states according to the exon data
  */
@@ -34,14 +36,19 @@ public class HiddenMarkovModel
 			for(int stateIndex = 0; stateIndex < HiddenMarkovModel.States.size(); stateIndex ++)
 			{
 				double prob = ForwardProbability.get(exonIndex).get(stateIndex) * BackwardProbability.get(exonIndex).get(stateIndex);
+				//System.out.println(ForwardProbability.get(exonIndex).get(stateIndex) + "\t" + 
+					//	BackwardProbability.get(exonIndex).get(stateIndex) + "\t" + prob + "\t" + stateIndex);
 				if ( prob > maxProb )
 				{
 					maxProb = prob;
 					maxState = HiddenMarkovModel.States.get(stateIndex);
+					//System.out.println(stateIndex);
 				}
 			}
 			Exon e = exons.get(exonIndex);
 			e.state = maxState;
+			if (maxState == null)
+				System.out.println("!!!");
 			exons.set(exonIndex, e);
 		}
 	}
@@ -75,7 +82,7 @@ public class HiddenMarkovModel
 					State nextState = HiddenMarkovModel.States.get(nextExonState);
 					int lengthOfIntron = exons.get(exonIndex+1).posLeft - e.posRight;
 					sum += BackwardProbability.get(exonIndex+1).get(nextExonState) 
-					* State.getTransitionProbability(currentState, nextState, lengthOfIntron)
+					* State.getTransitionProbability(currentState, nextState, lengthOfIntron, e.length())
 					* State.getEmissionProbability(exons.get(exonIndex+1).FPKM, exons.get(exonIndex+1).SNPs, expected.FPKM, expected.SNPs, nextState);
 				}
 				prob.add(sum); 				
@@ -129,7 +136,8 @@ public class HiddenMarkovModel
 				{
 					State prevState = HiddenMarkovModel.States.get(prevExonState);
 					int lengthOfIntron = e.posLeft - exons.get(exonIndex-1).posRight;
-					sum += ForwardProbability.get(exonIndex-1).get(prevExonState) * State.getTransitionProbability(prevState, currentState, lengthOfIntron);
+					sum += ForwardProbability.get(exonIndex-1).get(prevExonState) 
+					* State.getTransitionProbability(prevState, currentState, lengthOfIntron, e.length());
 				}
 				prob.add(sum * State.getEmissionProbability(e.FPKM, e.SNPs, expected.FPKM, expected.SNPs, HiddenMarkovModel.States.get(state)));					
 			}

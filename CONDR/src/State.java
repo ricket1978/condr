@@ -1,3 +1,5 @@
+package CONDR.src;
+
 /*
  * This class defines the states included in the Markov Model
  * They are based on underlying biology and as such we define six states
@@ -37,14 +39,14 @@ public class State
 	 * Gets the transition probability from state s1 -> state s2
 	 * For CNV state -> normal state, transition probability is dependent on length of intron
 	 */
-	public static double getTransitionProbability(State s1, State s2, int lengthOfIntron)
+	public static double getTransitionProbability(State s1, State s2, int lengthOfIntron, int lengthOfExon)
 	{
 		Double transitionProb = State.transitionProbabilities.get(s1).get(s2);
 
 		// Check for invalid state transition. Prob(invalid state transition) = 0
 		if (transitionProb == null)
 			transitionProb = 0.0;
-		
+
 		if ( transitionProb == State.computeAtRunTime )
 		{
 			if (s1.equals(s2)) // self loop in Markov Model
@@ -54,12 +56,29 @@ public class State
 			}	
 			else
 			{
-				transitionProb = (double)lengthOfIntron / s1.E_LengthOfState;
-				// sanity checking in the event that length of the intron > expected length of the CNV
-				if (transitionProb < 0)
-					transitionProb = 0.0;
-				else if (transitionProb > 1.0)
-					transitionProb = 1.0;
+				if (s2.stateName == NORMAL)
+				{
+					transitionProb = (double)lengthOfIntron / s1.E_LengthOfState;
+					// sanity checking in the event that length of the intron > expected length of the CNV
+					if (transitionProb < 0)
+						transitionProb = 0.0;
+					else if (transitionProb > 1.0)
+						transitionProb = 1.0;
+				}
+				else
+				{
+					// TODO check formula/equation
+					double rate = .001; // TODO: MAKE this into a parameter/user driven input
+					// Poisson process with lambda = rate of occurrence of CNV
+					double lambda = rate * lengthOfExon;
+					transitionProb = lambda*Math.exp(-lambda);
+					
+					if (transitionProb < 0)
+						transitionProb = 0.0;
+					else if (transitionProb > 1.0)
+						transitionProb = 1.0;
+									
+				}
 			}
 		}
 		return transitionProb;
@@ -73,7 +92,7 @@ public class State
 	public static ArrayList<State> initializeStates()
 	{
 		ArrayList<State> states = new ArrayList<State>();
-		
+
 		State.deltaRPKM = 0.25;
 		State.deltaSNPs = 0.05;
 
@@ -144,9 +163,10 @@ public class State
 		HashMap<State, Double> transProbNormalToCNV = new HashMap<State, Double>();
 		for (State s : states)
 		{
-			double transProb = 0;
+			double transProb = State.computeAtRunTime;
+			/*			double transProb = 0;
 			transProb = (double)s.E_NumberOfOccurrencesOfState / totalNumberOfOccurrencesOfStates;
-			transProbNormalToCNV.put(s, transProb);
+			 */		transProbNormalToCNV.put(s, transProb);
 		}
 
 		HashMap<State, Double> transProbCNVToNormal = new HashMap<State, Double>();
@@ -180,13 +200,13 @@ public class State
 	{
 		switch(this.stateName)
 		{
-			case State.NORMAL: 				return "Normal"; 
-			case State.HOMOZYGOUS_DELETE: 	return "Homozygous Deletion"; 
-			case State.HETEROZYGOUS_DELETE: return "Heterozygous Deletion"; 
-			case State.COPY_NEUTRAL_LOH: 	return "Copy Neutral Loss of Heterozygosity"; 
-			case State.INSERTION: 			return "Insertion"; 
-			case State.CHROMATIN_CHANGE: 	return "Chromatin Change"; 
-			case State.UNKNOWN_TYPE: 		return "Unknown Type"; 
+		case State.NORMAL: 				return "Normal"; 
+		case State.HOMOZYGOUS_DELETE: 	return "Homozygous Deletion"; 
+		case State.HETEROZYGOUS_DELETE: return "Heterozygous Deletion"; 
+		case State.COPY_NEUTRAL_LOH: 	return "Copy Neutral Loss of Heterozygosity"; 
+		case State.INSERTION: 			return "Insertion"; 
+		case State.CHROMATIN_CHANGE: 	return "Chromatin Change"; 
+		case State.UNKNOWN_TYPE: 		return "Unknown Type"; 
 		}
 		return "";
 	}
