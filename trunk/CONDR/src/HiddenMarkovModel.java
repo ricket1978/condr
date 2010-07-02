@@ -20,29 +20,29 @@ public class HiddenMarkovModel
 		States = State.initializeStates();
 	}
 
-	public static void getStates(ArrayList<Exon> exons, ArrayList<Exon> expectedValues)
+	public static void getStates(ArrayList<Exon> exons, ArrayList<Exon> expectedValues, ArrayList<Exon> stdDeviations)
 	{
 		HiddenMarkovModel.initialize(exons);
 
-		ArrayList<ArrayList<Double>> ForwardProbability = HiddenMarkovModel.computeForwardProbabilities(exons, expectedValues);
-		ArrayList<ArrayList<Double>> BackwardProbability = HiddenMarkovModel.computeBackwardProbabilities(exons, expectedValues);
+		ArrayList<ArrayList<Double>> ForwardProbability = HiddenMarkovModel.computeForwardProbabilities(exons, expectedValues, stdDeviations);
+		ArrayList<ArrayList<Double>> BackwardProbability = HiddenMarkovModel.computeBackwardProbabilities(exons, expectedValues, stdDeviations);
 
 		// for each exon
 		// most likely state = argmax(forward prob * back prob)
 		for(int exonIndex = 0; exonIndex < exons.size(); exonIndex ++)
 		{
-			double maxProb = 0;
+			double maxProb = Double.NEGATIVE_INFINITY;
 			State maxState = null;
 			for(int stateIndex = 0; stateIndex < HiddenMarkovModel.States.size(); stateIndex ++)
 			{
 				double prob = ForwardProbability.get(exonIndex).get(stateIndex) * BackwardProbability.get(exonIndex).get(stateIndex);
-				//System.out.println(ForwardProbability.get(exonIndex).get(stateIndex) + "\t" + 
-					//	BackwardProbability.get(exonIndex).get(stateIndex) + "\t" + prob + "\t" + stateIndex);
+				System.out.println(ForwardProbability.get(exonIndex).get(stateIndex) + "\t" + 
+					BackwardProbability.get(exonIndex).get(stateIndex) + "\t" + prob + "\t" + stateIndex);
 				if ( prob > maxProb )
 				{
 					maxProb = prob;
 					maxState = HiddenMarkovModel.States.get(stateIndex);
-					//System.out.println(stateIndex);
+					System.out.println(stateIndex);
 				}
 			}
 			Exon e = exons.get(exonIndex);
@@ -53,8 +53,9 @@ public class HiddenMarkovModel
 		}
 	}
 
-	private static ArrayList<ArrayList<Double>> computeBackwardProbabilities(ArrayList<Exon> exons, ArrayList<Exon> expectedValues)
-	{
+	private static ArrayList<ArrayList<Double>> computeBackwardProbabilities(ArrayList<Exon> exons, 
+			ArrayList<Exon> expectedValues, ArrayList<Exon> stdDeviations)
+			{
 		ArrayList<ArrayList<Double>> BackwardProbability = new ArrayList<ArrayList<Double>>();
 		for (int i=0; i<exons.size(); i++)
 			BackwardProbability.add(new ArrayList<Double>());
@@ -72,6 +73,7 @@ public class HiddenMarkovModel
 		{
 			Exon e = exons.get(exonIndex);
 			Exon expected = expectedValues.get(exonIndex);
+			Exon stdDev = stdDeviations.get(exonIndex);
 			ArrayList<Double> prob = new ArrayList<Double>();
 			for(int state=0; state<HiddenMarkovModel.States.size(); state++) // for each of the states
 			{
@@ -83,7 +85,8 @@ public class HiddenMarkovModel
 					int lengthOfIntron = exons.get(exonIndex+1).posLeft - e.posRight;
 					sum += BackwardProbability.get(exonIndex+1).get(nextExonState) 
 					* State.getTransitionProbability(currentState, nextState, lengthOfIntron, e.length())
-					* State.getEmissionProbability(exons.get(exonIndex+1).FPKM, exons.get(exonIndex+1).SNPs, expected.FPKM, expected.SNPs, nextState);
+					* State.getEmissionProbability(exons.get(exonIndex+1).FPKM, exons.get(exonIndex+1).SNPs, 
+							expected.FPKM, expected.SNPs, stdDev.FPKM, stdDev.SNPs, nextState);
 				}
 				prob.add(sum); 				
 			}
@@ -106,10 +109,11 @@ public class HiddenMarkovModel
 		}
 
 		return (BackwardProbability);
-	}
+			}
 
-	private static ArrayList<ArrayList<Double>> computeForwardProbabilities(ArrayList<Exon> exons, ArrayList<Exon> expectedValues)
-	{
+	private static ArrayList<ArrayList<Double>> computeForwardProbabilities(ArrayList<Exon> exons, 
+			ArrayList<Exon> expectedValues, ArrayList<Exon> stdDeviations)
+			{
 		ArrayList<ArrayList<Double>> ForwardProbability = new ArrayList<ArrayList<Double>>();
 		// Initialize so that we're always starting out in normal state
 		ArrayList<Double> initialProbabilities = new ArrayList<Double>();
@@ -125,6 +129,7 @@ public class HiddenMarkovModel
 		{
 			Exon e = exons.get(exonIndex);
 			Exon expected = expectedValues.get(exonIndex);
+			Exon stdDev = stdDeviations.get(exonIndex);
 
 			ArrayList<Double> prob = new ArrayList<Double>();
 			// Fill in exon's state array
@@ -139,7 +144,8 @@ public class HiddenMarkovModel
 					sum += ForwardProbability.get(exonIndex-1).get(prevExonState) 
 					* State.getTransitionProbability(prevState, currentState, lengthOfIntron, e.length());
 				}
-				prob.add(sum * State.getEmissionProbability(e.FPKM, e.SNPs, expected.FPKM, expected.SNPs, HiddenMarkovModel.States.get(state)));					
+				prob.add(sum * State.getEmissionProbability(e.FPKM, e.SNPs, expected.FPKM, 
+						expected.SNPs, stdDev.FPKM, stdDev.SNPs, HiddenMarkovModel.States.get(state)));					
 			}
 
 			// Deals with underflow issues
@@ -159,6 +165,6 @@ public class HiddenMarkovModel
 			ForwardProbability.add(prob);
 		}	
 		return (ForwardProbability);
-	}
+			}
 
 }

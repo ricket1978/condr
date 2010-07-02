@@ -72,12 +72,12 @@ public class State
 					// Poisson process with lambda = rate of occurrence of CNV
 					double lambda = rate * lengthOfExon;
 					transitionProb = lambda*Math.exp(-lambda);
-					
+
 					if (transitionProb < 0)
 						transitionProb = 0.0;
 					else if (transitionProb > 1.0)
 						transitionProb = 1.0;
-									
+
 				}
 			}
 		}
@@ -229,8 +229,43 @@ public class State
 	}
 
 	public static double getEmissionProbability(double observedFPKM, double observedSNPs, double expectedFPKM,
-			double expectedSNPs, State s)
+			double expectedSNPs, double stdDevFPKM, double stdDevSNPs, State s)
 	{
+		// Emission probability is the probability of observing that value given the distribution parameters
+		// the expected values are computed assuming normal. Hence for other states, we multiple the mean
+		// by the ratios for that state. We assume the same std dev for all the states distributions
+
+		// Prob(value x | expected, stdDev, state) -> assuming this is a NORMAL DISTRUIBUTION
+
+		double probFPKM = Math.exp(-((observedFPKM - s.rpkmRatio*expectedFPKM)*(observedFPKM - s.rpkmRatio*expectedFPKM))/(2*stdDevFPKM*stdDevFPKM))/(Math.sqrt(2*Math.PI*stdDevFPKM*stdDevFPKM));
+		double probSNPs = Math.exp(-((observedSNPs - s.snpRatio*expectedSNPs)*(observedSNPs - s.snpRatio*expectedSNPs))/(2*stdDevSNPs*stdDevSNPs))/Math.sqrt(2*Math.PI*stdDevSNPs*stdDevSNPs);
+
+		// handling case where all the baselines are equal
+		if (stdDevFPKM == 0.0)
+			if (observedFPKM == s.rpkmRatio*expectedFPKM)
+				probFPKM = 1;
+			else 
+				probFPKM = 0;
+		if (stdDevSNPs == 0.0)
+			if (observedSNPs == s.snpRatio*expectedSNPs)
+				probSNPs = 1;
+			else
+				probSNPs = 0;
+
+		// TODO: how to combine the two?
+		if (probFPKM * probSNPs > 1)
+		{
+			System.out.println("ahh!");
+			probSNPs = 0;
+			probSNPs = (observedSNPs - s.snpRatio*expectedSNPs);
+			probSNPs = -(probSNPs*probSNPs);
+			probSNPs = probSNPs*probSNPs/(2*stdDevSNPs*stdDevSNPs);
+			probSNPs = Math.exp(probSNPs);
+			probSNPs = probSNPs/Math.sqrt(2*Math.PI*stdDevSNPs*stdDevSNPs);
+
+		}
+		return (probFPKM * probSNPs);
+		/*
 		double observedRPKMRatio = observedFPKM/expectedFPKM;
 		double observedSNPRatio = observedSNPs/expectedSNPs;
 
@@ -249,5 +284,6 @@ public class State
 			return 0.95;
 		else
 			return 0.05;
+		 */
 	}
 }

@@ -410,4 +410,55 @@ public class Exon
 		return baselineExonValues;
 	}
 
+	public static ArrayList<Exon> calculateStdDevValues(ArrayList<String> baselineExonFileNames, int chromosome, ArrayList<Exon> expectedValues)
+	{
+		ArrayList<Exon> baselineExonStdDevValues = new ArrayList<Exon>();
+
+		// for each file, 'add' the values to the baseline
+		for(String fileName : baselineExonFileNames)
+		{
+			String line = null; 
+			int exonIndex = 0;
+			try
+			{
+				BufferedReader br = new BufferedReader(new FileReader(fileName));
+				while( (line = br.readLine()) != null)
+				{
+					// first file read
+					Exon e = new Exon(line, true);					
+					
+					if (fileName.equals(baselineExonFileNames.get(0)))
+					{
+						e.SNPs = (e.SNPs - expectedValues.get(exonIndex).SNPs)*(e.SNPs - expectedValues.get(exonIndex).SNPs);
+						e.FPKM = (e.FPKM - expectedValues.get(exonIndex).FPKM)*(e.FPKM - expectedValues.get(exonIndex).FPKM);
+						baselineExonStdDevValues.add(e);						
+					}
+					else
+					{
+						Exon baselineE = baselineExonStdDevValues.get(exonIndex);
+						baselineE.FPKM += e.FPKM;
+						baselineE.SNPs += e.SNPs;
+						baselineExonStdDevValues.set(exonIndex, baselineE);
+					}
+					exonIndex ++;
+				}
+			} catch (IOException e)
+			{
+				System.err.println("Error: Unable to process exon file");
+				e.printStackTrace();
+				System.exit(0);
+			}
+		}
+
+		// average the values
+		for(Exon e: baselineExonStdDevValues)
+		{
+			//TODO: remove System.out.println(e);
+			e.SNPs = e.SNPs/baselineExonFileNames.size();
+			e.FPKM = e.FPKM/baselineExonFileNames.size();
+		}
+
+		return baselineExonStdDevValues;
+	}
+
 }
