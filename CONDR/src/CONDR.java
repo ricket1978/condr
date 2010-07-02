@@ -7,6 +7,8 @@ public class CONDR
 {
 	static ArrayList<Exon> Exons = new ArrayList<Exon>();
 	static ArrayList<Exon> ExpectedValues = new ArrayList<Exon>();
+	static ArrayList<Exon> StdDeviations = new ArrayList<Exon>(); // TODO reconsider a format for these so they're not arrays of exons
+	// maybe extend exon to take n types of inputs?
 
 	static String exonFileName = "";
 	static String outputFileName = "";
@@ -39,7 +41,9 @@ public class CONDR
 				System.out.println("Chromosome " + chromosome);
 				System.out.println("Calculating expected values from given files....");
 				ExpectedValues = Exon.calculateExpectedValues(baselineExonFileNames, chromosome);
+				StdDeviations = Exon.calculateStdDevValues(baselineExonFileNames, chromosome, ExpectedValues);
 				Exon.sortExons(ExpectedValues);
+				Exon.sortExons(StdDeviations);
 				
 				System.out.println("Reading exon with measurements file....");
 				currentTime = System.currentTimeMillis();
@@ -50,7 +54,7 @@ public class CONDR
 				// TODO add chromosome checks
 				System.out.println("Calculating States....");
 				currentTime = System.currentTimeMillis();
-				HiddenMarkovModel.getStates(Exons, ExpectedValues);
+				HiddenMarkovModel.getStates(Exons, ExpectedValues, StdDeviations);
 				double totalStateCalcTime = (System.currentTimeMillis() - currentTime)/1000F;
 
 				// Print output
