@@ -1,4 +1,3 @@
-package CONDR.src;
 
 /*
  * Stores and manipulates relevant exon information
@@ -29,6 +28,17 @@ public class Exon
 
 	public static final int READLENGTH = 50;
 
+	Exon()
+	{
+		chr = 0;
+		state = null;
+		this.FPKM = 0;
+		this.SNPs = 0;
+		this.reads = new ArrayList<MappedReads>();
+		this.numberOfOverlappingReads = 0;
+		this.SNPPositions = new HashMap<Integer, Integer>();
+	}
+	
 	/*
 	 *  parse a line of data (modified SAM format) and input appropriate fields
 	 */
@@ -426,18 +436,18 @@ public class Exon
 				{
 					// first file read
 					Exon e = new Exon(line, true);					
-					
+					Exon expected = expectedValues.get(exonIndex);
 					if (fileName.equals(baselineExonFileNames.get(0)))
 					{
-						e.SNPs = (e.SNPs - expectedValues.get(exonIndex).SNPs)*(e.SNPs - expectedValues.get(exonIndex).SNPs);
-						e.FPKM = (e.FPKM - expectedValues.get(exonIndex).FPKM)*(e.FPKM - expectedValues.get(exonIndex).FPKM);
+						e.SNPs = (e.SNPs - expected.SNPs)*(e.SNPs - expected.SNPs);
+						e.FPKM = (e.FPKM - expected.FPKM)*(e.FPKM - expected.FPKM);
 						baselineExonStdDevValues.add(e);						
 					}
 					else
 					{
 						Exon baselineE = baselineExonStdDevValues.get(exonIndex);
-						baselineE.FPKM += e.FPKM;
-						baselineE.SNPs += e.SNPs;
+						baselineE.FPKM += (e.FPKM - expected.FPKM)*(e.FPKM - expected.FPKM);
+						baselineE.SNPs += (e.SNPs - expected.SNPs)*(e.SNPs - expected.SNPs);
 						baselineExonStdDevValues.set(exonIndex, baselineE);
 					}
 					exonIndex ++;
@@ -454,8 +464,8 @@ public class Exon
 		for(Exon e: baselineExonStdDevValues)
 		{
 			//TODO: remove System.out.println(e);
-			e.SNPs = e.SNPs/baselineExonFileNames.size();
-			e.FPKM = e.FPKM/baselineExonFileNames.size();
+			e.SNPs = Math.sqrt(e.SNPs/(baselineExonFileNames.size()-1));
+			e.FPKM = Math.sqrt(e.FPKM/(baselineExonFileNames.size()-1));
 		}
 
 		return baselineExonStdDevValues;
