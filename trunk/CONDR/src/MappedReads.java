@@ -1,4 +1,3 @@
-package CONDR.src;
 
 /*
  * Stores necessary information about RNA short read fragments that have already been 

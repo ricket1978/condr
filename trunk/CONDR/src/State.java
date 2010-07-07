@@ -1,4 +1,3 @@
-package CONDR.src;
 
 /*
  * This class defines the states included in the Markov Model
@@ -14,6 +13,7 @@ package CONDR.src;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import cern.jet.random.engine.RandomEngine;
 
 public class State
 {
@@ -235,10 +235,13 @@ public class State
 		// the expected values are computed assuming normal. Hence for other states, we multiple the mean
 		// by the ratios for that state. We assume the same std dev for all the states distributions
 
+
 		// Prob(value x | expected, stdDev, state) -> assuming this is a NORMAL DISTRUIBUTION
 
-		double probFPKM = Math.exp(-((observedFPKM - s.rpkmRatio*expectedFPKM)*(observedFPKM - s.rpkmRatio*expectedFPKM))/(2*stdDevFPKM*stdDevFPKM))/(Math.sqrt(2*Math.PI*stdDevFPKM*stdDevFPKM));
-		double probSNPs = Math.exp(-((observedSNPs - s.snpRatio*expectedSNPs)*(observedSNPs - s.snpRatio*expectedSNPs))/(2*stdDevSNPs*stdDevSNPs))/Math.sqrt(2*Math.PI*stdDevSNPs*stdDevSNPs);
+		cern.jet.random.Normal distFPKM = new cern.jet.random.Normal (s.rpkmRatio*expectedFPKM, stdDevFPKM, RandomEngine.makeDefault());
+		double probFPKM = distFPKM.pdf(observedFPKM);
+		cern.jet.random.Normal distSNPs = new cern.jet.random.Normal (s.rpkmRatio*expectedSNPs, stdDevSNPs, RandomEngine.makeDefault());
+		double probSNPs = distSNPs.pdf(observedSNPs);
 
 		// handling case where all the baselines are equal
 		if (stdDevFPKM == 0.0)
@@ -253,37 +256,6 @@ public class State
 				probSNPs = 0;
 
 		// TODO: how to combine the two?
-		if (probFPKM * probSNPs > 1)
-		{
-			System.out.println("ahh!");
-			probSNPs = 0;
-			probSNPs = (observedSNPs - s.snpRatio*expectedSNPs);
-			probSNPs = -(probSNPs*probSNPs);
-			probSNPs = probSNPs*probSNPs/(2*stdDevSNPs*stdDevSNPs);
-			probSNPs = Math.exp(probSNPs);
-			probSNPs = probSNPs/Math.sqrt(2*Math.PI*stdDevSNPs*stdDevSNPs);
-
-		}
 		return (probFPKM * probSNPs);
-		/*
-		double observedRPKMRatio = observedFPKM/expectedFPKM;
-		double observedSNPRatio = observedSNPs/expectedSNPs;
-
-		// Bin the observed values between (Expectation - Delta) and (Expectation + Delta)
-		// We have allowed a Delta deviation from the expectation to allow for 
-		// less stringent cut-off values
-		// Expectation & Delta values are computed from prior observations such that the 
-		// probability of being within that range is 95%
-		// Thus, if the observation is within Delta of the Expectation, there is a 95% 
-		// probability of it having been from a distribution with the state's parameters
-		// If not, it is 5%
-		if (observedRPKMRatio >= s.rpkmRatio - State.deltaRPKM && 
-				observedRPKMRatio <= s.rpkmRatio + State.deltaRPKM &&
-				observedSNPRatio >= s.snpRatio - State.deltaSNPs &&
-				observedSNPRatio <= s.snpRatio + State.deltaSNPs )
-			return 0.95;
-		else
-			return 0.05;
-		 */
 	}
 }

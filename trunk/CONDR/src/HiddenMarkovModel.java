@@ -1,4 +1,3 @@
-package CONDR.src;
 
 /*
  * Calculates and stores states according to the exon data
@@ -15,14 +14,14 @@ public class HiddenMarkovModel
 	public static final double UNDERFLOW_factor = 10E10;
 
 	// Initialize all the states
-	public static void initialize(ArrayList<Exon> exons)
+	public static void initialize()
 	{
 		States = State.initializeStates();
 	}
 
 	public static void getStates(ArrayList<Exon> exons, ArrayList<Exon> expectedValues, ArrayList<Exon> stdDeviations)
 	{
-		HiddenMarkovModel.initialize(exons);
+		HiddenMarkovModel.initialize();
 
 		ArrayList<ArrayList<Double>> ForwardProbability = HiddenMarkovModel.computeForwardProbabilities(exons, expectedValues, stdDeviations);
 		ArrayList<ArrayList<Double>> BackwardProbability = HiddenMarkovModel.computeBackwardProbabilities(exons, expectedValues, stdDeviations);
@@ -36,19 +35,14 @@ public class HiddenMarkovModel
 			for(int stateIndex = 0; stateIndex < HiddenMarkovModel.States.size(); stateIndex ++)
 			{
 				double prob = ForwardProbability.get(exonIndex).get(stateIndex) * BackwardProbability.get(exonIndex).get(stateIndex);
-				System.out.println(ForwardProbability.get(exonIndex).get(stateIndex) + "\t" + 
-					BackwardProbability.get(exonIndex).get(stateIndex) + "\t" + prob + "\t" + stateIndex);
 				if ( prob > maxProb )
 				{
 					maxProb = prob;
 					maxState = HiddenMarkovModel.States.get(stateIndex);
-					System.out.println(stateIndex);
 				}
 			}
 			Exon e = exons.get(exonIndex);
 			e.state = maxState;
-			if (maxState == null)
-				System.out.println("!!!");
 			exons.set(exonIndex, e);
 		}
 	}
@@ -72,9 +66,10 @@ public class HiddenMarkovModel
 		for(int exonIndex = exons.size() - 2; exonIndex >= 0; exonIndex --)
 		{
 			Exon e = exons.get(exonIndex);
-			Exon expected = expectedValues.get(exonIndex);
-			Exon stdDev = stdDeviations.get(exonIndex);
+			Exon expected = expectedValues.get(exonIndex+1);
+			Exon stdDev = stdDeviations.get(exonIndex+1);
 			ArrayList<Double> prob = new ArrayList<Double>();
+			
 			for(int state=0; state<HiddenMarkovModel.States.size(); state++) // for each of the states
 			{
 				double sum = 0;
