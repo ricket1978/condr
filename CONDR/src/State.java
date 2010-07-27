@@ -11,6 +11,9 @@
  * CHROMATIN_CHANGE
  */
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import cern.jet.random.engine.RandomEngine;
@@ -21,11 +24,8 @@ public class State
 	double rpkmRatio;
 	double snpRatio;
 	int E_LengthOfState;
-	int E_NumberOfOccurrencesOfState;
 
-	static double deltaRPKM;
-	static double deltaSNPs;
-	static double stdDevRPKM;
+	static double rateOfOccurenceOfCNV = 0;
 
 	static HashMap<State, HashMap<State, Double>> transitionProbabilities = new HashMap<State, HashMap<State, Double>>();
 
@@ -41,46 +41,58 @@ public class State
 	 */
 	public static double getTransitionProbability(State s1, State s2, int lengthOfIntron, int lengthOfExon)
 	{
-		Double transitionProb = State.transitionProbabilities.get(s1).get(s2);
+		Double transitionProb = 0.0;
+		if (s1 == null || s2 == null)
+		{
+			System.err.println("Invalid states in transition Probabilities");
+			System.exit(0);
+		}
 
-		// Check for invalid state transition. Prob(invalid state transition) = 0
-		if (transitionProb == null)
+		if (s1.equals(s2) && s1.stateName!=NORMAL) // self loop in Markov Model
+		{
+			transitionProb = (Math.max(1 - ( (double)lengthOfIntron / s1.E_LengthOfState ), 0.0));
+			// returning a positive number in the event that the length of the intron > expected length of the CNV
+		}	
+		else if (s1.equals(s2) && s1.stateName == NORMAL) // normal -> normal
+		{
+			// see below part
+			// Poisson process with lambda = rate of occurrence of CNV
+			double lambda = rateOfOccurenceOfCNV * lengthOfExon;
+			transitionProb = lambda*Math.exp(-lambda);
+			transitionProb = 1 - 5*transitionProb;
+			if (transitionProb < 0)
+				transitionProb = 0.0;
+		}
+		else if (! s1.equals(s2))
+		{
+			if (s2.stateName == NORMAL)
+			{
+				transitionProb = (double)lengthOfIntron / s1.E_LengthOfState;
+				// sanity checking in the event that length of the intron > expected length of the CNV
+				if (transitionProb < 0)
+					transitionProb = 0.0;
+				else if (transitionProb > 1.0)
+					transitionProb = 1.0;
+			}
+			else if (s1.stateName == NORMAL)
+			{
+				// TODO check formula/equation
+				double rate = .0001; // TODO: MAKE this into a parameter/user driven input
+				// Poisson process with lambda = rate of occurrence of CNV
+				double lambda = rate * lengthOfExon;
+				transitionProb = lambda*Math.exp(-lambda);
+
+				if (transitionProb < 0)
+					transitionProb = 0.0;
+				else if (transitionProb > 1.0)
+					transitionProb = 1.0;
+
+			}
+			else transitionProb = 0.0;
+		}
+		else
 			transitionProb = 0.0;
 
-		if ( transitionProb == State.computeAtRunTime )
-		{
-			if (s1.equals(s2)) // self loop in Markov Model
-			{
-				transitionProb = (Math.max(1 - ( (double)lengthOfIntron / s1.E_LengthOfState ), 0.0));
-				// returning a positive number in the event that the length of the intron > expected length of the CNV
-			}	
-			else
-			{
-				if (s2.stateName == NORMAL)
-				{
-					transitionProb = (double)lengthOfIntron / s1.E_LengthOfState;
-					// sanity checking in the event that length of the intron > expected length of the CNV
-					if (transitionProb < 0)
-						transitionProb = 0.0;
-					else if (transitionProb > 1.0)
-						transitionProb = 1.0;
-				}
-				else
-				{
-					// TODO check formula/equation
-					double rate = .001; // TODO: MAKE this into a parameter/user driven input
-					// Poisson process with lambda = rate of occurrence of CNV
-					double lambda = rate * lengthOfExon;
-					transitionProb = lambda*Math.exp(-lambda);
-
-					if (transitionProb < 0)
-						transitionProb = 0.0;
-					else if (transitionProb > 1.0)
-						transitionProb = 1.0;
-
-				}
-			}
-		}
 		return transitionProb;
 	}
 
@@ -89,110 +101,70 @@ public class State
 	 * This information is based on prior observations
 	 * Contains Hard coded assumptions about the data
 	 */
-	public static ArrayList<State> initializeStates()
+	public static HashMap<String, State> initializeStates()
 	{
-		ArrayList<State> states = new ArrayList<State>();
+		//ArrayList<State> states = new ArrayList<State>();
+		HashMap<String, State> states = new HashMap<String, State>();
 
-		State.deltaRPKM = 0.25;
-		State.deltaSNPs = 0.05;
-
-		State s = new State();
-		s.stateName = State.NORMAL;
-		s.rpkmRatio = 1;
-		s.snpRatio = 1;
-		s.E_LengthOfState = 2000;
-		s.E_NumberOfOccurrencesOfState = 1000;
-		states.add(s);
-
-		s = new State();
-		s.stateName = State.HOMOZYGOUS_DELETE;
-		s.rpkmRatio = 0;
-		s.snpRatio = 0;
-		s.E_LengthOfState = 2000;
-		s.E_NumberOfOccurrencesOfState = 200;
-		states.add(s);
-
-		s = new State();
-		s.stateName = State.HETEROZYGOUS_DELETE;
-		s.rpkmRatio = .5;
-		s.snpRatio = 0;
-		s.E_LengthOfState = 2000;
-		s.E_NumberOfOccurrencesOfState = 200;
-		states.add(s);
-
-		s = new State();		
-		s.stateName = State.COPY_NEUTRAL_LOH;
-		s.rpkmRatio = 1;
-		s.snpRatio = 0;
-		s.E_LengthOfState = 2000;
-		s.E_NumberOfOccurrencesOfState = 200;
-		states.add(s);
-
-		s = new State();		
-		s.stateName = State.INSERTION;
-		s.rpkmRatio = 1.5;
-		s.snpRatio = 1.5;
-		s.E_LengthOfState = 2000;
-		s.E_NumberOfOccurrencesOfState = 200;
-		states.add(s);
-
-		s = new State();		
-		s.stateName = State.CHROMATIN_CHANGE;
-		s.rpkmRatio = 1.5;
-		s.snpRatio = 1;
-		s.E_LengthOfState = 2000;
-		s.E_NumberOfOccurrencesOfState = 200;
-		states.add(s);
-
-		intializeTransitionProb(states);
-		return states;
-	}
-
-	/* 
-	 * Computes the Transition Probability matrix
-	 * 
-	 * If we can compute ahead of time, we put into the matrix.
-	 * Otherwise, Prob = -1 and we compute when we have the necessary information
-	 */
-	private static void intializeTransitionProb(ArrayList<State> states)
-	{
-		int totalNumberOfOccurrencesOfStates = 0;
-		for(int i=0; i<states.size(); i++)
-			totalNumberOfOccurrencesOfStates += states.get(i).E_NumberOfOccurrencesOfState;
-
-		HashMap<State, Double> transProbNormalToCNV = new HashMap<State, Double>();
-		for (State s : states)
+		// Read parameter file and input states
+		String parameterFile = "ParameterFile"; // TODO: pass in as command line argument
+		String line = "";
+		try
 		{
-			double transProb = State.computeAtRunTime;
-			/*			double transProb = 0;
-			transProb = (double)s.E_NumberOfOccurrencesOfState / totalNumberOfOccurrencesOfStates;
-			 */		transProbNormalToCNV.put(s, transProb);
-		}
-
-		HashMap<State, Double> transProbCNVToNormal = new HashMap<State, Double>();
-		for (State s : states)
-		{
-			// Normal -> Normal taken care of in previous transition probability list
-			if (s.stateName == NORMAL)
-				continue;
-			double transProb = State.computeAtRunTime;
-			transProbCNVToNormal.put(s, transProb);
-		}
-
-		// insert into transition probability matrix
-		State normalState = states.get(NORMAL);
-		for(State s1 : states)
-		{
-			if (s1.stateName == NORMAL)
-				State.transitionProbabilities.put(s1, transProbNormalToCNV);
-			else
+			BufferedReader br = new BufferedReader(new FileReader(parameterFile));
+			while( (line = br.readLine()) != null)
 			{
-				HashMap<State, Double> transProbStateToOthers = new HashMap<State, Double>();			
-				transProbStateToOthers.put(normalState, transProbCNVToNormal.get(s1));
-				transProbStateToOthers.put(s1, (double)State.computeAtRunTime);			
-				State.transitionProbabilities.put(s1, transProbStateToOthers);
+				if (line.startsWith("//") || line.equals("")) // ignore comments
+					continue;
+				else if (line.startsWith("rate"))
+				{
+					rateOfOccurenceOfCNV = Double.parseDouble(line.split("=")[1]);
+				}
+				else
+				{
+					String[] lineElements = line.split("\\."); 
+					String stateName = lineElements[0];
+					State s = null;
+					if (states.containsKey(stateName))
+						s = states.get(stateName);
+					else
+					{
+						s = new State();
+						if (stateName.equals("NORMAL"))
+							s.stateName = State.NORMAL;
+						else if (stateName.equals("HOMOZYGOUS_DELETE"))
+							s.stateName = State.HOMOZYGOUS_DELETE;
+						else if (stateName.equals("HETEROZYGOUS_DELETE"))
+							s.stateName = State.HETEROZYGOUS_DELETE;
+						else if (stateName.equals("COPY_NEUTRAL_LOH"))
+							s.stateName = State.COPY_NEUTRAL_LOH;
+						else if (stateName.equals("INSERTION"))
+							s.stateName = State.INSERTION;
+						else if (stateName.equals("CHROMATIN_CHANGE"))
+							s.stateName = State.CHROMATIN_CHANGE;
+					}
+					String fieldName = lineElements[1].split("=")[0].trim();
+					String fieldValue = line.split("=")[1].trim();
+					// TODO make this neater
+					if (fieldName.equals("rpkmRatio"))
+						s.rpkmRatio = Double.parseDouble(fieldValue);
+					else if (fieldName.equals("snpRatio"))
+						s.snpRatio = Double.parseDouble(fieldValue);
+					else if (fieldName.equals("E_LengthOfState"))
+						s.E_LengthOfState = Integer.parseInt(fieldValue);
+					/*else if (fieldName.equals("E_NumberOfOccurrencesOfState"))
+						s.E_NumberOfOccurrencesOfState = Integer.parseInt(fieldValue);
+					 */states.put(stateName, s);
+				}
 			}
+		} catch (IOException e)
+		{
+			System.err.println("Error: Unable to process parameter file");
+			e.printStackTrace();
+			System.exit(0);
 		}
+
+		return states;
 	}
 
 	// For pretty-printing and for serving coffee with the code
@@ -200,13 +172,13 @@ public class State
 	{
 		switch(this.stateName)
 		{
-		case State.NORMAL: 				return "Normal"; 
-		case State.HOMOZYGOUS_DELETE: 	return "Homozygous Deletion"; 
-		case State.HETEROZYGOUS_DELETE: return "Heterozygous Deletion"; 
-		case State.COPY_NEUTRAL_LOH: 	return "Copy Neutral Loss of Heterozygosity"; 
-		case State.INSERTION: 			return "Insertion"; 
-		case State.CHROMATIN_CHANGE: 	return "Chromatin Change"; 
-		case State.UNKNOWN_TYPE: 		return "Unknown Type"; 
+			case State.NORMAL: 				return "Normal"; 
+			case State.HOMOZYGOUS_DELETE: 	return "Homozygous Deletion"; 
+			case State.HETEROZYGOUS_DELETE: return "Heterozygous Deletion"; 
+			case State.COPY_NEUTRAL_LOH: 	return "Copy Neutral Loss of Heterozygosity"; 
+			case State.INSERTION: 			return "Insertion"; 
+			case State.CHROMATIN_CHANGE: 	return "Chromatin Change"; 
+			case State.UNKNOWN_TYPE: 		return "Unknown Type"; 
 		}
 		return "";
 	}
@@ -258,4 +230,5 @@ public class State
 		// TODO: how to combine the two?
 		return (probFPKM * probSNPs);
 	}
+
 }
