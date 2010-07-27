@@ -59,7 +59,7 @@ public class CONDR
 				// Print output
 				if (outputFileName.equals(""))
 					for(int i = 0; i<Exons.size(); i++) //for(Exon e : Exons)
-						System.out.println(Exons.get(i) + "\t" + ExpectedValues.get(i).FPKM + "\t" + ExpectedValues.get(i).SNPs);
+						System.out.println(Exons.get(i) + "\t" + ExpectedValues.get(i).SNPs + "\t" + ExpectedValues.get(i).FPKM);
 				else
 				{
 					Writer output = new BufferedWriter(new FileWriter(outputFileName));

@@ -1,7 +1,7 @@
 import java.util.ArrayList;
 
 import cern.jet.random.engine.RandomEngine;
-
+import cern.jet.random.*;
 
 public class SimulateExonMeasurements
 {
@@ -14,51 +14,49 @@ public class SimulateExonMeasurements
 		HiddenMarkovModel.initialize();
 
 		parseArguments( args );
-
-		for(int i=0; i<60; i++)
-		{
-			Exon e = new Exon();
-
-			if (i<10)
-			{
-				e.state = HiddenMarkovModel.States.get(0);
-			}
-			else if (i<20)
-			{
-				e.state = HiddenMarkovModel.States.get(1);
-			}
-			else if (i<30)
-			{
-				e.state = HiddenMarkovModel.States.get(2);
-			}
-			else if (i<40)
-			{
-				e.state = HiddenMarkovModel.States.get(3);
-			}
-			else if (i<50)
-			{
-				e.state = HiddenMarkovModel.States.get(4);
-			}
-			else if (i<60)
-			{
-				e.state = HiddenMarkovModel.States.get(5);
-			}			
-			exons.add(e);
-		}
-
 		ArrayList<Exon> ExpectedValues = new ArrayList<Exon>();
 		ArrayList<Exon> StdDeviations = new ArrayList<Exon>(); 
 
 		ExpectedValues = Exon.calculateExpectedValues(baselineExonFileNames, 1);
 		StdDeviations = Exon.calculateStdDevValues(baselineExonFileNames, 1, ExpectedValues);
 
+		for(int i=0; i<110; i++)
+		{
+			Exon e = ExpectedValues.get(i);
+
+			if (i<10)
+				e.state = HiddenMarkovModel.States.get(0);
+			else if (i<20)
+				e.state = HiddenMarkovModel.States.get(1);
+			else if (i<30)
+				e.state = HiddenMarkovModel.States.get(0);
+			else if (i<40)
+				e.state = HiddenMarkovModel.States.get(2);
+			else if (i<50)
+				e.state = HiddenMarkovModel.States.get(0);
+			else if (i<60)
+				e.state = HiddenMarkovModel.States.get(3);
+			else if (i<70)
+				e.state = HiddenMarkovModel.States.get(0);
+			else if (i<80)
+				e.state = HiddenMarkovModel.States.get(4);
+			else if (i<90)
+				e.state = HiddenMarkovModel.States.get(0);
+			else if (i<100)
+				e.state = HiddenMarkovModel.States.get(5);
+			else if (i<110)
+				e.state = HiddenMarkovModel.States.get(0);
+			exons.add(e);
+		}
+
 		for(int i=0; i<exons.size(); i++)
 		{
 			Exon e = exons.get(i);
 			e.SNPs = getLikelyValue(ExpectedValues.get(i).SNPs*e.state.snpRatio, StdDeviations.get(i).SNPs);
 			e.FPKM = getLikelyValue(ExpectedValues.get(i).FPKM*e.state.rpkmRatio, StdDeviations.get(i).FPKM);
-			//			System.out.println(e + "\t" + ExpectedValues.get(i).SNPs + "\t" + ExpectedValues.get(i).FPKM + "\t" + ExpectedValues.get(i).FPKM*e.state.rpkmRatio);
-			System.out.println(e);
+			System.out.println(e + "\t" + ExpectedValues.get(i).SNPs + "\t" + ExpectedValues.get(i).FPKM*e.state.rpkmRatio
+					+ "\t" + StdDeviations.get(i).SNPs + "\t" + StdDeviations.get(i).FPKM);
+			//System.out.println(e);
 		}
 
 	}
@@ -67,8 +65,12 @@ public class SimulateExonMeasurements
 	{
 		// TODO: check calculation of lambda parameter
 		// pick a value from poisson distribution with those parameters
-		cern.jet.random.Poisson dist = new cern.jet.random.Poisson(mean, RandomEngine.makeDefault());
-		return dist.nextDouble();
+		//cern.jet.random.Poisson dist = new cern.jet.random.Poisson(mean, RandomEngine.makeDefault());
+		Normal dist = new Normal(mean, stddev, RandomEngine.makeDefault());
+		double value = Double.NEGATIVE_INFINITY;
+		while (value < 0)
+			value = dist.nextDouble();
+		return value;
 	}
 
 	private static void parseArguments(String arguments[])
