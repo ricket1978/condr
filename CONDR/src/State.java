@@ -101,13 +101,12 @@ public class State
 	 * This information is based on prior observations
 	 * Contains Hard coded assumptions about the data
 	 */
-	public static HashMap<String, State> initializeStates()
+	public static HashMap<String, State> initializeStates(String parameterFile)
 	{
-		//ArrayList<State> states = new ArrayList<State>();
 		HashMap<String, State> states = new HashMap<String, State>();
 
 		// Read parameter file and input states
-		String parameterFile = "ParameterFile"; // TODO: pass in as command line argument
+		//String parameterFile = "ParameterFile"; // TODO: pass in as command line argument
 		String line = "";
 		try
 		{
@@ -152,9 +151,7 @@ public class State
 						s.snpRatio = Double.parseDouble(fieldValue);
 					else if (fieldName.equals("E_LengthOfState"))
 						s.E_LengthOfState = Integer.parseInt(fieldValue);
-					/*else if (fieldName.equals("E_NumberOfOccurrencesOfState"))
-						s.E_NumberOfOccurrencesOfState = Integer.parseInt(fieldValue);
-					 */states.put(stateName, s);
+					states.put(stateName, s);
 				}
 			}
 		} catch (IOException e)
