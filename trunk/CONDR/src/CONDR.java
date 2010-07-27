@@ -13,6 +13,7 @@ public class CONDR
 	static String outputFileName = "";
 	static ArrayList<String> baselineExonFileNames = new ArrayList<String>();
 	static ArrayList<Integer> chromosomes = new ArrayList<Integer>();
+	static String parameterFileName = "";
 	static boolean printTimingMetrics = false;
 	static boolean usingPileup = false;
 
@@ -53,12 +54,12 @@ public class CONDR
 				// TODO add chromosome checks
 				System.out.println("Calculating States....");
 				currentTime = System.currentTimeMillis();
-				HiddenMarkovModel.getStates(Exons, ExpectedValues, StdDeviations);
+				HiddenMarkovModel.getStates(Exons, ExpectedValues, StdDeviations, parameterFileName);
 				double totalStateCalcTime = (System.currentTimeMillis() - currentTime)/1000F;
 
 				// Print output
 				if (outputFileName.equals(""))
-					for(int i = 0; i<Exons.size(); i++) //for(Exon e : Exons)
+					for(int i = 0; i<Exons.size(); i++)
 						System.out.println(Exons.get(i) + "\t" + ExpectedValues.get(i).SNPs + "\t" + ExpectedValues.get(i).FPKM);
 				else
 				{
@@ -123,13 +124,16 @@ public class CONDR
 					for (String f : fields)
 					{
 						baselineExonFileNames.add(f);
-					}
-					
+					}					
+				}
+				else if (arg.equals("-p"))
+				{
+					parameterFileName = arguments[index + 1];
 				}
 			}
 
 			if (exonFileName.equals("") 
-					|| chromosomes.isEmpty()
+					|| chromosomes.isEmpty() || parameterFileName.equals("")
 			) 
 			{
 				System.err.println("Improper Usage:");

@@ -14,15 +14,9 @@ public class HiddenMarkovModel
 	public static final double UNDERFLOW = 10E-10;
 	public static final double UNDERFLOW_factor = 10E10;
 
-	// Initialize all the states
-	public static void initialize()
+	public static void getStates(ArrayList<Exon> exons, ArrayList<Exon> expectedValues, ArrayList<Exon> stdDeviations, String parameterFileName)
 	{
-		States = State.initializeStates();
-	}
-
-	public static void getStates(ArrayList<Exon> exons, ArrayList<Exon> expectedValues, ArrayList<Exon> stdDeviations)
-	{
-		HiddenMarkovModel.initialize();
+		States = State.initializeStates(parameterFileName);
 
 		ArrayList<HashMap<State, Double>> ForwardProbability = HiddenMarkovModel.computeForwardProbabilities(exons, expectedValues, stdDeviations);
 		ArrayList<HashMap<State, Double>> BackwardProbability = HiddenMarkovModel.computeBackwardProbabilities(exons, expectedValues, stdDeviations);
