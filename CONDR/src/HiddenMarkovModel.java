@@ -14,6 +14,11 @@ public class HiddenMarkovModel
 	public static final double UNDERFLOW = 10E-10;
 	public static final double UNDERFLOW_factor = 10E10;
 
+	public static void initialize(String parameterFileName)
+	{
+		States = State.initializeStates(parameterFileName);		
+	}
+	
 	public static void getStates(ArrayList<Exon> exons, ArrayList<Exon> expectedValues, ArrayList<Exon> stdDeviations, String parameterFileName)
 	{
 		States = State.initializeStates(parameterFileName);

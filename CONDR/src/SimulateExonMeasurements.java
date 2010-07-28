@@ -11,7 +11,7 @@ public class SimulateExonMeasurements
 	public static void main(String args[])
 	{
 		ArrayList<Exon> exons = new ArrayList<Exon>();
-		HiddenMarkovModel.initialize();
+		HiddenMarkovModel.initialize( "ParameterFile" );
 
 		parseArguments( args );
 		ArrayList<Exon> ExpectedValues = new ArrayList<Exon>();
