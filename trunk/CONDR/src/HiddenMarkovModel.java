@@ -35,7 +35,13 @@ public class HiddenMarkovModel
 			for(int stateIndex = 0; stateIndex < HiddenMarkovModel.States.size(); stateIndex ++)
 			{
 				double prob = ForwardProbability.get(exonIndex).get(HiddenMarkovModel.getStateFromIndex(stateIndex)) 
-						* BackwardProbability.get(exonIndex).get(HiddenMarkovModel.getStateFromIndex(stateIndex)); //stateIndex);
+						* BackwardProbability.get(exonIndex).get(HiddenMarkovModel.getStateFromIndex(stateIndex));
+				// TODO: check hack
+				if (ForwardProbability.get(exonIndex).get(HiddenMarkovModel.getStateFromIndex(stateIndex)) == 0.0)
+					prob = BackwardProbability.get(exonIndex).get(HiddenMarkovModel.getStateFromIndex(stateIndex));
+				if (BackwardProbability.get(exonIndex).get(HiddenMarkovModel.getStateFromIndex(stateIndex)) == 0.0)
+					prob = ForwardProbability.get(exonIndex).get(HiddenMarkovModel.getStateFromIndex(stateIndex)) ;
+
 				if ( prob > maxProb )
 				{
 					maxProb = prob;
@@ -89,8 +95,8 @@ public class HiddenMarkovModel
 					int lengthOfIntron = exons.get(exonIndex+1).posLeft - e.posRight;
 					sum += BackwardProbability.get(exonIndex+1).get(nextState)  
 					* State.getTransitionProbability(currentState, nextState, lengthOfIntron, e.length())
-					* State.getEmissionProbability(exons.get(exonIndex+1).FPKM, exons.get(exonIndex+1).SNPs, 
-							expected.FPKM, expected.SNPs, stdDev.FPKM, stdDev.SNPs, nextState);
+					* State.getEmissionProbability(exons.get(exonIndex+1), 
+							expected, stdDev, nextState);
 				}
 				prob.put(currentState, sum); 				
 			}
@@ -143,8 +149,7 @@ public class HiddenMarkovModel
 					sum += ForwardProbability.get(exonIndex-1).get(prevState) 
 					* State.getTransitionProbability(prevState, currentState, lengthOfIntron, e.length());
 				}
-				prob.put(currentState, (sum * State.getEmissionProbability(e.FPKM, e.SNPs, expected.FPKM, 
-						expected.SNPs, stdDev.FPKM, stdDev.SNPs, currentState)));	
+				prob.put(currentState, (sum * State.getEmissionProbability(e, expected, stdDev, currentState)));
 			}
 
 			// Deals with underflow issues

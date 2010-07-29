@@ -15,6 +15,8 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+
+import cern.jet.random.Poisson;
 import cern.jet.random.engine.RandomEngine;
 
 public class State
@@ -194,20 +196,45 @@ public class State
 		return	(this.stateName == that.stateName);
 	}
 
+	// TODO: remove.. most likely useless function
 	public static double getEmissionProbability(double observedFPKM, double observedSNPs, double expectedFPKM,
-			double expectedSNPs, double stdDevFPKM, double stdDevSNPs, State s)
+			double expectedSNPs, double stdDevFPKM, double stdDevSNPs, double normalizationFPKM, double normalizationSNPs, State s)
 	{
 		// Emission probability is the probability of observing that value given the distribution parameters
 		// the expected values are computed assuming normal. Hence for other states, we multiple the mean
 		// by the ratios for that state. We assume the same std dev for all the states distributions
 
+		// TODO: ChECK THE NROMALIZATION!!!!!
 
 		// Prob(value x | expected, stdDev, state) -> assuming this is a NORMAL DISTRUIBUTION
 
-		cern.jet.random.Normal distFPKM = new cern.jet.random.Normal (s.rpkmRatio*expectedFPKM, stdDevFPKM, RandomEngine.makeDefault());
-		double probFPKM = distFPKM.pdf(observedFPKM);
-		cern.jet.random.Normal distSNPs = new cern.jet.random.Normal (s.rpkmRatio*expectedSNPs, stdDevSNPs, RandomEngine.makeDefault());
-		double probSNPs = distSNPs.pdf(observedSNPs);
+		/*
+		//cern.jet.random.Normal distFPKM = new cern.jet.random.Normal (s.rpkmRatio*expectedFPKM, stdDevFPKM, RandomEngine.makeDefault());
+		Poisson distFPKM = new Poisson ((int)(s.rpkmRatio*expectedFPKM), RandomEngine.makeDefault());
+		//System.out.println(observedFPKM/normalizationFPKM);
+		double probFPKM = distFPKM.pdf((int)observedFPKM);
+		//cern.jet.random.Normal distSNPs = new cern.jet.random.Normal (s.rpkmRatio*expectedSNPs, stdDevSNPs, RandomEngine.makeDefault());
+		Poisson distSNPs = new Poisson ((int)(s.rpkmRatio*expectedSNPs), RandomEngine.makeDefault());
+		//System.out.println(observedSNPs/normalizationSNPs + "\t" + observedSNPs + "\t" + normalizationSNPs + "\t" + (int)(observedSNPs/normalizationSNPs) + "\t" + (int)(s.rpkmRatio*expectedSNPs/normalizationSNPs));
+		//System.out.println(observedSNPs + "\t" + normalizationSNPs + "\t" + (int)(s.rpkmRatio*expectedSNPs));
+		double probSNPs = distSNPs.pdf((int)observedSNPs);
+		 */
+
+		observedFPKM = observedFPKM/normalizationFPKM;
+		expectedFPKM = expectedFPKM/normalizationFPKM;
+		observedSNPs = observedSNPs/normalizationSNPs;
+		expectedSNPs = expectedSNPs/normalizationSNPs;
+
+		//System.out.println(observedFPKM + "\t" + expectedFPKM + "\t" + observedSNPs + "\t" + expectedSNPs);
+		// STILL NEED TO FIX NORMALIZATION
+		// e^(-lambda) * lambda^k / k!
+		//System.out.println(observedSNPs + 		"\t" + normalizationSNPs + "\t" + (int)(s.rpkmRatio*expectedSNPs));
+		int lambda = (int)(s.rpkmRatio*expectedSNPs);
+		double probSNPs = Math.exp((double)lambda) * Math.pow(lambda, (int)observedSNPs) / cern.jet.math.Arithmetic.factorial((int)observedSNPs);
+		lambda = (int)(s.rpkmRatio*expectedFPKM);
+		double probFPKM = Math.exp((double)lambda) * Math.pow(lambda, (int)observedFPKM) / cern.jet.math.Arithmetic.factorial((int)observedFPKM);
+
+		//System.out.println(probFPKM + "\t" + observedFPKM + "\t" + probSNPs + "\t" + observedSNPs);
 
 		// handling case where all the baselines are equal
 		if (stdDevFPKM == 0.0)
@@ -216,6 +243,54 @@ public class State
 			else 
 				probFPKM = 0;
 		if (stdDevSNPs == 0.0)
+			if (observedSNPs == s.snpRatio*expectedSNPs)
+				probSNPs = 1;
+			else
+				probSNPs = 0;
+
+		// TODO: how to combine the two?
+		return (probFPKM * probSNPs);
+	}
+	
+	public static Double getEmissionProbability(Exon exon, Exon expected, Exon stdDev, State s)
+	{
+		// Emission probability is the probability of observing that value given the distribution parameters
+		// the expected values are computed assuming poisson. Hence for other states, we multiple the mean
+		// by the ratios for that state. 
+
+		double observedSNPs = exon.SNPs;
+		double expectedSNPs = expected.SNPs; 
+		double observedFPKM = exon.FPKM;
+		double expectedFPKM = expected.FPKM;
+
+		// TODO: Are std dev's necessary?
+		double stdDevFPKM = stdDev.FPKM;
+		double stdDevSNPs = stdDev.SNPs;
+
+		Poisson distFPKM = new Poisson (s.rpkmRatio*expectedFPKM, RandomEngine.makeDefault());
+		double probFPKM = distFPKM.pdf((int)observedFPKM);
+		Poisson distSNPs = new Poisson (s.rpkmRatio*expectedSNPs, RandomEngine.makeDefault());
+		double probSNPs = distSNPs.pdf((int)observedSNPs);
+
+		// Since the package handles 0! = 0 instead of 0! = 1, we have to do that manually		
+		if (observedSNPs == 0.0)
+		{
+			double lambda = s.rpkmRatio*expectedSNPs;
+			probSNPs = Math.exp(-lambda) * Math.pow(lambda, (int)observedSNPs) / cern.jet.math.Arithmetic.factorial((int)observedSNPs);
+		}
+		if (observedFPKM == 0.0)
+		{
+			double lambda = s.rpkmRatio*expectedFPKM;
+			probFPKM = Math.exp(-lambda) * Math.pow(lambda, (int)observedFPKM) / cern.jet.math.Arithmetic.factorial((int)observedFPKM);
+		}	
+
+		// handling case where all the baselines are equal
+		if (s.rpkmRatio*expectedFPKM == 0.0)
+			if (observedFPKM == s.rpkmRatio*expectedFPKM)
+				probFPKM = 1;
+			else 
+				probFPKM = 0;
+		if (s.snpRatio*expectedSNPs == 0.0)
 			if (observedSNPs == s.snpRatio*expectedSNPs)
 				probSNPs = 1;
 			else
