@@ -24,6 +24,7 @@ public class CONDR
 
 		/*
 		 * -c "16-16" -e "WZ1034.region16.out.exon" -t -b "WZ186.region16.out.exon,WZ740.region16.out.exon,WZ3313.region16.out.exon,WZ561389.region16.out.exon"
+		 * -c "16-16" -e "WSimulated3.region16.out.exon.partial" -t -b "WZ186.region16.out.exon.partial,WZ740.region16.out.exon.partial,WZ3313.region16.out.exon.partial,WZ561389.region16.out.exon.partial" -p "ParameterFile"
 		 */
 
 		parseArguments( args );
