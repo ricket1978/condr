@@ -76,9 +76,8 @@ public class State
 			else if (s1.stateName == NORMAL)
 			{
 				// TODO check formula/equation
-				double rate = .0001; // TODO: MAKE this into a parameter/user driven input
 				// Poisson process with lambda = rate of occurrence of CNV
-				double lambda = rate * lengthOfExon;
+				double lambda = rateOfOccurenceOfCNV * lengthOfExon;
 				transitionProb = lambda*Math.exp(-lambda);
 
 				if (transitionProb < 0)
@@ -105,7 +104,6 @@ public class State
 		HashMap<String, State> states = new HashMap<String, State>();
 
 		// Read parameter file and input states
-		//String parameterFile = "ParameterFile"; // TODO: pass in as command line argument
 		String line = "";
 		try
 		{

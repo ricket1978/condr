@@ -5,13 +5,14 @@ import cern.jet.random.*;
 
 public class SimulateExonMeasurements
 {
+	// W3 created with variable lengths with means based on the parameter file
 	static ArrayList<String> baselineExonFileNames = new ArrayList<String>();
 	static ArrayList<Integer> chromosomes = new ArrayList<Integer>();
+	static ArrayList<Exon> exons = new ArrayList<Exon>();
 
 	public static void main(String args[])
 	{
-		ArrayList<Exon> exons = new ArrayList<Exon>();
-		HiddenMarkovModel.initialize( "ParameterFile" );
+		HiddenMarkovModel.initialize( "SimulationParameterFile" );
 
 		parseArguments( args );
 		ArrayList<Exon> ExpectedValues = new ArrayList<Exon>();
@@ -20,45 +21,62 @@ public class SimulateExonMeasurements
 		ExpectedValues = Exon.calculateExpectedValues(baselineExonFileNames, 1);
 		StdDeviations = Exon.calculateStdDevValues(baselineExonFileNames, 1, ExpectedValues);
 
-		for(int i=0; i<110; i++)
+		// assigning state values
+		// TODO: switch the ordering and such while testing since some states are smaller than others as a result
+		int index = 0;
+		while( true)
 		{
-			Exon e = ExpectedValues.get(i);
-
-			if (i<10)
-				e.state = HiddenMarkovModel.States.get(0);
-			else if (i<20)
-				e.state = HiddenMarkovModel.States.get(1);
-			else if (i<30)
-				e.state = HiddenMarkovModel.States.get(0);
-			else if (i<40)
-				e.state = HiddenMarkovModel.States.get(2);
-			else if (i<50)
-				e.state = HiddenMarkovModel.States.get(0);
-			else if (i<60)
-				e.state = HiddenMarkovModel.States.get(3);
-			else if (i<70)
-				e.state = HiddenMarkovModel.States.get(0);
-			else if (i<80)
-				e.state = HiddenMarkovModel.States.get(4);
-			else if (i<90)
-				e.state = HiddenMarkovModel.States.get(0);
-			else if (i<100)
-				e.state = HiddenMarkovModel.States.get(5);
-			else if (i<110)
-				e.state = HiddenMarkovModel.States.get(0);
-			exons.add(e);
+			index = SimulateRegion(ExpectedValues, StdDeviations, "NORMAL", index);
+			if (index > ExpectedValues.size() - 10) break;
+			index = SimulateRegion(ExpectedValues, StdDeviations, "HOMOZYGOUS_DELETE", index);
+			if (index > ExpectedValues.size() - 10) break;
+			index = SimulateRegion(ExpectedValues, StdDeviations, "NORMAL", index);
+			if (index > ExpectedValues.size() - 10) break;
+			index = SimulateRegion(ExpectedValues, StdDeviations, "HETEROZYGOUS_DELETE", index);
+			if (index > ExpectedValues.size() - 10) break;
+			index = SimulateRegion(ExpectedValues, StdDeviations, "NORMAL", index);
+			if (index > ExpectedValues.size() - 10) break;
+			index = SimulateRegion(ExpectedValues, StdDeviations, "COPY_NEUTRAL_LOH", index);
+			if (index > ExpectedValues.size() - 10) break;
+			index = SimulateRegion(ExpectedValues, StdDeviations, "NORMAL", index);
+			if (index > ExpectedValues.size() - 10) break;
+			index = SimulateRegion(ExpectedValues, StdDeviations, "INSERTION", index);
+			if (index > ExpectedValues.size() - 10) break;
+			index = SimulateRegion(ExpectedValues, StdDeviations, "NORMAL", index);
+			if (index > ExpectedValues.size() - 10) break;
+			index = SimulateRegion(ExpectedValues, StdDeviations, "CHROMATIN_CHANGE", index);
+			if (index > ExpectedValues.size() - 10) break;
 		}
-
 		for(int i=0; i<exons.size(); i++)
 		{
 			Exon e = exons.get(i);
 			e.SNPs = getLikelyValue(ExpectedValues.get(i).SNPs*e.state.snpRatio, StdDeviations.get(i).SNPs);
 			e.FPKM = getLikelyValue(ExpectedValues.get(i).FPKM*e.state.rpkmRatio, StdDeviations.get(i).FPKM);
-			System.out.println(e + "\t" + ExpectedValues.get(i).SNPs + "\t" + ExpectedValues.get(i).FPKM*e.state.rpkmRatio
-					+ "\t" + StdDeviations.get(i).SNPs + "\t" + StdDeviations.get(i).FPKM);
-			//System.out.println(e);
+			//System.out.println(e + "\t" + ExpectedValues.get(i).SNPs + "\t" + ExpectedValues.get(i).FPKM*e.state.rpkmRatio
+			//	+ "\t" + StdDeviations.get(i).SNPs + "\t" + StdDeviations.get(i).FPKM);
+			System.out.println(e);
 		}
 
+	}
+
+	private static int SimulateRegion(ArrayList<Exon> ExpectedValues,
+			ArrayList<Exon> StdDeviations, String stateName, int index)
+	{
+		// TODO: check about Poisson distribution for this
+		int regionStartPosition = ExpectedValues.get(index).posLeft;
+		Poisson dist = new Poisson(HiddenMarkovModel.States.get(stateName).E_LengthOfState, RandomEngine.makeDefault());
+		int regionLength = dist.nextInt();
+		Exon e = ExpectedValues.get(index);
+		int genomicLength = 0;
+		for(genomicLength = 0; genomicLength <= regionLength; genomicLength = (e.posRight - regionStartPosition))
+		{
+			e.state = HiddenMarkovModel.States.get(stateName);
+			exons.add(e);
+			index ++;
+			e = new Exon();
+			e = ExpectedValues.get(index);
+		}
+		return index;
 	}
 
 	private static double getLikelyValue(double mean, double stddev)
