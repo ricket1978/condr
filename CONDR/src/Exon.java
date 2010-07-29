@@ -38,7 +38,7 @@ public class Exon
 		this.numberOfOverlappingReads = 0;
 		this.SNPPositions = new HashMap<Integer, Integer>();
 	}
-	
+
 	/*
 	 *  parse a line of data (modified SAM format) and input appropriate fields
 	 */
@@ -412,7 +412,6 @@ public class Exon
 		// average the values
 		for(Exon e: baselineExonValues)
 		{
-			//TODO: remove System.out.println(e);
 			e.SNPs = e.SNPs/baselineExonFileNames.size();
 			e.FPKM = e.FPKM/baselineExonFileNames.size();
 		}
@@ -469,6 +468,60 @@ public class Exon
 		}
 
 		return baselineExonStdDevValues;
+	}
+
+	// TODO: do this CORRECTLY!!!
+	public static ArrayList<Exon> calculateNormalizationFactor(	ArrayList<String> baselineExonFileNames, int i)
+	{
+		ArrayList<Exon> minimalValues = new ArrayList<Exon>();	
+		
+		// assumes that the values are multiples of some common factor
+		// makes sense since they are all computed by dividing a whole number by the exon length
+		for(String fileName : baselineExonFileNames)
+		{
+			String line = null; 
+			int exonIndex = 0;
+			try
+			{
+				BufferedReader br = new BufferedReader(new FileReader(fileName));
+				while( (line = br.readLine()) != null)
+				{
+					// first file read
+					Exon e = new Exon(line, true);
+					if (fileName.equals(baselineExonFileNames.get(0)))
+					{
+						if (e.SNPs == 0.0)
+							e.SNPs = 1;
+						if (e.FPKM == 0.0)
+							e.FPKM = 1;
+						minimalValues.add(e);
+					}
+					else
+					{
+						Exon minimalValue = minimalValues.get(exonIndex);
+						if (e.FPKM < minimalValue.FPKM && e.FPKM != 0.0)
+							minimalValue.FPKM = e.FPKM;
+						if (e.SNPs < minimalValue.SNPs && e.SNPs != 0.0)
+							minimalValue.SNPs = e.SNPs;
+						minimalValues.set(exonIndex, minimalValue);
+					}
+					exonIndex ++;
+				}
+			} catch (IOException e)
+			{
+				System.err.println("Error: Unable to process exon file");
+				e.printStackTrace();
+				System.exit(0);
+			}
+		}
+		for(Exon e : minimalValues)
+		{
+			if (e.SNPs <= 0.0)
+				e.SNPs = 1;
+			if (e.FPKM <= 0.0)
+				e.FPKM = 1;
+		}
+		return minimalValues;
 	}
 
 }
