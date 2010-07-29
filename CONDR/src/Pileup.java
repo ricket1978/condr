@@ -101,8 +101,8 @@ public class Pileup
 			
 			for(Exon ex : exons)
 			{
-				ex.SNPs = (double)ex.SNPPositions.size()/ex.length();
-				ex.FPKM = (double)ex.FPKM/ex.length();
+				ex.SNPs = (double)ex.SNPPositions.size(); ///ex.length();
+				//ex.FPKM = (double)ex.FPKM/ex.length();
 			}
 		} catch (IOException e)
 		{
