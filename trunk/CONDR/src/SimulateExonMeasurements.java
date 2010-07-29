@@ -5,6 +5,10 @@ import cern.jet.random.*;
 
 public class SimulateExonMeasurements
 {
+	/*
+	 * -c "16-16" -b "WZ186.region16.out.exon.partial,WZ740.region16.out.exon.partial,WZ3313.region16.out.exon.partial,WZ561389.region16.out.exon.partial"
+	 * 
+	 */
 	// W3 created with variable lengths with means based on the parameter file
 	static ArrayList<String> baselineExonFileNames = new ArrayList<String>();
 	static ArrayList<Integer> chromosomes = new ArrayList<Integer>();
@@ -16,6 +20,7 @@ public class SimulateExonMeasurements
 
 		parseArguments( args );
 		ArrayList<Exon> ExpectedValues = new ArrayList<Exon>();
+		//ArrayList<Exon> NormalizationFactor = new ArrayList<Exon>();
 		ArrayList<Exon> StdDeviations = new ArrayList<Exon>(); 
 
 		ExpectedValues = Exon.calculateExpectedValues(baselineExonFileNames, 1);
@@ -24,6 +29,7 @@ public class SimulateExonMeasurements
 		// assigning state values
 		// TODO: switch the ordering and such while testing since some states are smaller than others as a result
 		int index = 0;
+		// continue until we've exhausted all the exons with some data
 		while( true)
 		{
 			index = SimulateRegion(ExpectedValues, StdDeviations, "NORMAL", index);
@@ -47,13 +53,14 @@ public class SimulateExonMeasurements
 			index = SimulateRegion(ExpectedValues, StdDeviations, "CHROMATIN_CHANGE", index);
 			if (index > ExpectedValues.size() - 10) break;
 		}
+
 		for(int i=0; i<exons.size(); i++)
 		{
 			Exon e = exons.get(i);
-			e.SNPs = getLikelyValue(ExpectedValues.get(i).SNPs*e.state.snpRatio, StdDeviations.get(i).SNPs);
-			e.FPKM = getLikelyValue(ExpectedValues.get(i).FPKM*e.state.rpkmRatio, StdDeviations.get(i).FPKM);
-			//System.out.println(e + "\t" + ExpectedValues.get(i).SNPs + "\t" + ExpectedValues.get(i).FPKM*e.state.rpkmRatio
-			//	+ "\t" + StdDeviations.get(i).SNPs + "\t" + StdDeviations.get(i).FPKM);
+			e.SNPs = getLikelyValue(ExpectedValues.get(i).SNPs*e.state.snpRatio, 
+					StdDeviations.get(i).SNPs);
+			e.FPKM = getLikelyValue(ExpectedValues.get(i).FPKM*e.state.rpkmRatio, 
+					StdDeviations.get(i).FPKM);
 			System.out.println(e);
 		}
 
@@ -82,9 +89,10 @@ public class SimulateExonMeasurements
 	private static double getLikelyValue(double mean, double stddev)
 	{
 		// TODO: check calculation of lambda parameter
+		// TODO: don't need stddev anymore?
 		// pick a value from poisson distribution with those parameters
-		//cern.jet.random.Poisson dist = new cern.jet.random.Poisson(mean, RandomEngine.makeDefault());
-		Normal dist = new Normal(mean, stddev, RandomEngine.makeDefault());
+		Poisson dist = new cern.jet.random.Poisson(mean, RandomEngine.makeDefault());
+		//Normal dist = new Normal(mean, stddev, RandomEngine.makeDefault());
 		double value = Double.NEGATIVE_INFINITY;
 		while (value < 0)
 			value = dist.nextDouble();
