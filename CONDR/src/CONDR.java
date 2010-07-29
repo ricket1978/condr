@@ -38,14 +38,14 @@ public class CONDR
 			for (int chromosome : chromosomes )
 			{
 				double currentTime = 0, totalExonReadTime = 0;
-				
+
 				System.out.println("Chromosome " + chromosome);
 				System.out.println("Calculating expected values from given files....");
 				ExpectedValues = Exon.calculateExpectedValues(baselineExonFileNames, chromosome);
 				StdDeviations = Exon.calculateStdDevValues(baselineExonFileNames, chromosome, ExpectedValues);
 				Exon.sortExons(ExpectedValues);
 				Exon.sortExons(StdDeviations);
-				
+
 				System.out.println("Reading exon with measurements file....");
 				currentTime = System.currentTimeMillis();
 				Exons = Exon.readAndStoreExonFile(exonFileName, chromosome);
@@ -79,6 +79,41 @@ public class CONDR
 					System.out.println("Time for reading exons file       : " + totalExonReadTime + ", " + Exons.size());
 					System.out.println("Time for calculating States       : " + totalStateCalcTime);
 				}
+
+				// Print confusion matrix
+				ArrayList<Exon> groundTruth = new ArrayList<Exon>();
+				String line = null; 
+				try
+				{
+					BufferedReader br = new BufferedReader(new FileReader(exonFileName));
+					while( (line = br.readLine()) != null)
+					{
+						Exon exon = new Exon(line, true);
+						exon.state.stateName = Integer.parseInt(line.split("\t")[6]);
+						groundTruth.add(exon);
+					}
+				} catch (IOException e)
+				{
+					System.err.println("Error: Unable to process exon file");
+					e.printStackTrace();
+					System.exit(0);
+				}
+				
+				int[][] confusionMatrix = new int[6][6];
+				for(int exonIndex = 0; exonIndex < Exons.size(); exonIndex++)
+				{
+					confusionMatrix[groundTruth.get(exonIndex).state.stateName][Exons.get(exonIndex).state.stateName]++;
+				}
+				System.out.println("RealValue\\CalcValue");
+				System.out.println("\t0\t1\t2\t3\t4\t5");
+				System.out.println("-----------------------------------------------");
+				for(int i=0; i<6; i++)
+				{
+					System.out.print(i + " |\t");
+					for(int j=0; j<6; j++)
+						System.out.print(confusionMatrix[i][j] + "\t");
+					System.out.println();
+				}
 			}
 		} catch (Exception e)
 		{
@@ -102,7 +137,7 @@ public class CONDR
 		 * -b <comma separated baseline file names>
 		 */
 		try {
- 			for(int index = 0; index < arguments.length; index ++)
+			for(int index = 0; index < arguments.length; index ++)
 			{
 				String arg = arguments[index];
 				if (arg.equals("-e"))
