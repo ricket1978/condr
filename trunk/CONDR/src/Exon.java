@@ -52,24 +52,45 @@ public class Exon
 		{
 			this.chr = 0; // for now, ignore X, Y, M chromosomes
 		}
+		try
+		{
 		if (fromExonFile)
 		{
+			/*
+			this.posLeft = Integer.parseInt(fields[1]);
+			this.posRight = Integer.parseInt(fields[1]);
+			this.geneName = fields[0];
+			this.FPKM = Double.parseDouble(fields[4]);
+			this.SNPs = Double.parseDouble(fields[3]);
+			*/
 			this.posLeft = Integer.parseInt(fields[1]);
 			this.posRight = Integer.parseInt(fields[2]);
 			this.geneName = fields[3];
 			this.FPKM = Double.parseDouble(fields[5]);
 			this.SNPs = Double.parseDouble(fields[4]);
+			
 		}
 		else
 		{
+			/*
 			this.posLeft = Integer.parseInt(fields[5]);
 			this.posRight = Integer.parseInt(fields[6]);
 			this.geneName = fields[7];
+			*/
+			this.posLeft = Integer.parseInt(fields[1]);
+			this.posRight = Integer.parseInt(fields[1]);
+			this.geneName = fields[0];
 			this.FPKM = 0;
 			this.SNPs = 0;
 			this.reads = new ArrayList<MappedReads>();
 			this.numberOfOverlappingReads = 0;
 			this.SNPPositions = new HashMap<Integer, Integer>();
+		}
+		}catch(Exception e)
+		{
+			System.err.println("Error in reading exon file "+ e.getMessage());
+			System.err.println("Errored exon data: " + dataLine);
+			e.printStackTrace();
 		}
 		this.state = new State(); 
 	}
@@ -121,7 +142,7 @@ public class Exon
 	 */
 	static void getFPKM(ArrayList<Expression> Expressions, ArrayList<Exon> Exons)
 	{
-		int count = 0;
+		double count = 0;
 		int exprIndex = 0;
 
 		// Helps to account for transcripts which are present in multiple exons
@@ -132,6 +153,7 @@ public class Exon
 		{
 			// until we are indexing the same chromosome, increment indices
 			// get to the same chromosome in exons & expressions
+			/*
 			while(exprIndex < Expressions.size() 
 					&& Exons.get(exonIndex).chr != Expressions.get(exprIndex).chr)
 			{
@@ -145,6 +167,7 @@ public class Exon
 					numberOfMovedExonPositions++;
 				}
 			}
+			*/
 
 			// go to the first transcript that in the exon
 			while( exprIndex < Expressions.size() 
@@ -383,6 +406,7 @@ public class Exon
 			int exonIndex = 0;
 			try
 			{
+				//System.out.println(fileName);
 				BufferedReader br = new BufferedReader(new FileReader(fileName));
 				while( (line = br.readLine()) != null)
 				{

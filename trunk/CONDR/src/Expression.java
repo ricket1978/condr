@@ -45,6 +45,7 @@ public class Expression
 		String line = null;
 		try
 		{
+			System.out.println("Expression File Name: " + expressionFileName);
 			BufferedReader br = new BufferedReader(new FileReader(expressionFileName));
 
 			while( (line = br.readLine()) != null)

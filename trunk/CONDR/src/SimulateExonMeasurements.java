@@ -16,9 +16,9 @@ public class SimulateExonMeasurements
 
 	public static void main(String args[])
 	{
-		HiddenMarkovModel.initialize( "SimulationParameterFile" );
-
 		parseArguments( args );
+		HiddenMarkovModel.initialize( args[0] );
+
 		ArrayList<Exon> ExpectedValues = new ArrayList<Exon>();
 		//ArrayList<Exon> NormalizationFactor = new ArrayList<Exon>();
 		ArrayList<Exon> StdDeviations = new ArrayList<Exon>(); 
@@ -32,36 +32,30 @@ public class SimulateExonMeasurements
 		// continue until we've exhausted all the exons with some data
 		while( true)
 		{
+			double randomNumber = Math.random();
 			index = SimulateRegion(ExpectedValues, StdDeviations, "NORMAL", index);
 			if (index > ExpectedValues.size() - 10) break;
-			index = SimulateRegion(ExpectedValues, StdDeviations, "HOMOZYGOUS_DELETE", index);
-			if (index > ExpectedValues.size() - 10) break;
-			index = SimulateRegion(ExpectedValues, StdDeviations, "NORMAL", index);
-			if (index > ExpectedValues.size() - 10) break;
-			index = SimulateRegion(ExpectedValues, StdDeviations, "HETEROZYGOUS_DELETE", index);
-			if (index > ExpectedValues.size() - 10) break;
-			index = SimulateRegion(ExpectedValues, StdDeviations, "NORMAL", index);
-			if (index > ExpectedValues.size() - 10) break;
-			index = SimulateRegion(ExpectedValues, StdDeviations, "COPY_NEUTRAL_LOH", index);
-			if (index > ExpectedValues.size() - 10) break;
-			index = SimulateRegion(ExpectedValues, StdDeviations, "NORMAL", index);
-			if (index > ExpectedValues.size() - 10) break;
-			index = SimulateRegion(ExpectedValues, StdDeviations, "INSERTION", index);
-			if (index > ExpectedValues.size() - 10) break;
-			index = SimulateRegion(ExpectedValues, StdDeviations, "NORMAL", index);
-			if (index > ExpectedValues.size() - 10) break;
-			index = SimulateRegion(ExpectedValues, StdDeviations, "CHROMATIN_CHANGE", index);
-			if (index > ExpectedValues.size() - 10) break;
+			if (randomNumber < 1.0/HiddenMarkovModel.States.size())
+				index = SimulateRegion(ExpectedValues, StdDeviations, "HOMOZYGOUS_DELETE", index);
+			else if  (randomNumber < 2.0/HiddenMarkovModel.States.size())
+				index = SimulateRegion(ExpectedValues, StdDeviations, "HETEROZYGOUS_DELETE", index);
+			else if  (randomNumber < 3.0/HiddenMarkovModel.States.size())
+				index = SimulateRegion(ExpectedValues, StdDeviations, "COPY_NEUTRAL_LOH", index);
+			else if  (randomNumber < 4.0/HiddenMarkovModel.States.size())
+				index = SimulateRegion(ExpectedValues, StdDeviations, "INSERTION", index);
+			else 
+				index = SimulateRegion(ExpectedValues, StdDeviations, "CHROMATIN_CHANGE", index);
 		}
 
 		for(int i=0; i<exons.size(); i++)
 		{
 			Exon e = exons.get(i);
+			//double origFPKM = ExpectedValues.get(i).FPKM;
 			e.SNPs = getLikelyValue(ExpectedValues.get(i).SNPs*e.state.snpRatio, 
 					StdDeviations.get(i).SNPs);
 			e.FPKM = getLikelyValue(ExpectedValues.get(i).FPKM*e.state.rpkmRatio, 
 					StdDeviations.get(i).FPKM);
-			System.out.println(e);
+			System.out.println(e); // + "\t||" + origFPKM);
 		}
 
 	}
@@ -71,15 +65,30 @@ public class SimulateExonMeasurements
 	{
 		// TODO: check about Poisson distribution for this
 		int regionStartPosition = ExpectedValues.get(index).posLeft;
+		//System.out.println(HiddenMarkovModel.States.get(stateName));
 		Poisson dist = new Poisson(HiddenMarkovModel.States.get(stateName).E_LengthOfState, RandomEngine.makeDefault());
 		int regionLength = dist.nextInt();
 		Exon e = ExpectedValues.get(index);
 		int genomicLength = 0;
+		//for (int i=0; i<10; i++)
 		for(genomicLength = 0; genomicLength <= regionLength; genomicLength = (e.posRight - regionStartPosition))
 		{
-			e.state = HiddenMarkovModel.States.get(stateName);
+			//if (e.posLeft == 33866544)
+				//System.out.println("##");
+			if (e.SNPs==0.0 && e.FPKM==0.0)
+			{
+				//System.out.println("!!" + e.geneName);
+				e.state = HiddenMarkovModel.States.get("NORMAL");
+			}
+			else
+				e.state = HiddenMarkovModel.States.get(stateName);
+			//System.out.println("#\t"+e);
 			exons.add(e);
 			index ++;
+			if (index >= ExpectedValues.size())
+			{
+				break;
+			}
 			e = new Exon();
 			e = ExpectedValues.get(index);
 		}
@@ -130,7 +139,7 @@ public class SimulateExonMeasurements
 					String[] fields = arguments[index+1].split(",");
 					for (String f : fields)
 					{
-						baselineExonFileNames.add(f);
+						baselineExonFileNames.add(f.trim());
 					}
 
 				}
@@ -142,7 +151,7 @@ public class SimulateExonMeasurements
 				System.err.println("java CONDR -e <exonFileName> " + 
 						"-c <chromosomes (start-end)> " + "[-t] " + "[-o <output file name>]");
 				System.exit(0);
-			}
+			}			
 		} catch(Exception e)
 		{
 			System.err.println("Exception: " + e.getMessage());

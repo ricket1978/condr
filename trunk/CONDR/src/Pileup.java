@@ -12,12 +12,19 @@ public class Pileup
 	int heterozygous;
 	int homozygous;
 	int coverage;
+	int chromosome;
 
 	public Pileup(String line)
 	{
 		String[] fields = line.split("\t");
 		position = Integer.parseInt(fields[1]);
 		coverage = Integer.parseInt(fields[4]);
+		try{
+			chromosome = Integer.parseInt(fields[0].substring(3));
+		} catch(NumberFormatException nfe)
+		{
+			chromosome = 0;
+		}
 		if (fields[2].equalsIgnoreCase(fields[3]))
 			heterozygous = 0;
 		else if (fields[3].equals("R") || fields[3].equals("Y") 
@@ -51,22 +58,33 @@ public class Pileup
 	/*
 	 * Reads the pileup and simultaneously updates the exon lists with appropriate values
 	 */
-	public static void readData(ArrayList<Exon> exons, String pileupFileName)
+	public static void readData(ArrayList<Exon> exons, BufferedReader br, String pileupFileName)
 	{
 		int exonIndex = 0;
+		// TODO: move this up so pileups are stored between iterations
+		// TODO: might be missing some pileups here 
 		ArrayList<Pileup> Pileups = new ArrayList<Pileup>();
 
 		String line = null;
 		try
 		{
-			BufferedReader br = new BufferedReader(new FileReader(pileupFileName));
-
+			int count = 0;
 			Exon e = exons.get(exonIndex);
 			while( (line = br.readLine()) != null)
 			{
+				count ++;
 				Pileup p = new Pileup(line);
 				Pileups.add(p);
-
+				if (count%1000000==0)	
+					System.out.println(p + "\t" + Pileups.size());
+				if (e.chr > p.chromosome) // reached end of chromosome
+				{
+					//System.out.println(e + "==" + p);
+					Pileups.clear();
+					continue;
+				}
+				else if (e.chr < p.chromosome)
+					break;
 				while(!Pileups.isEmpty() && e.posLeft > Pileups.get(0).position)
 					// remove until that point
 					Pileups.remove(0);
@@ -98,7 +116,7 @@ public class Pileup
 					}
 				}
 			}
-			
+
 			for(Exon ex : exons)
 			{
 				ex.SNPs = (double)ex.SNPPositions.size(); ///ex.length();
@@ -110,9 +128,9 @@ public class Pileup
 			e.printStackTrace();
 		}
 	}
-	
+
 	public String toString()
 	{
-		return (position + ", " + coverage + ", " + heterozygous);
+		return ("chr" + chromosome + "\t" + position + ": cov=" + coverage + "\t het=" + heterozygous);
 	}
 }
