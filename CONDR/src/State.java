@@ -25,6 +25,7 @@ public class State
 	double rpkmRatio;
 	double snpRatio;
 	int E_LengthOfState;
+	//int E_exons;
 
 	static double rateOfOccurenceOfCNV = 0;
 
@@ -35,6 +36,7 @@ public class State
 	INSERTION = 4, CHROMATIN_CHANGE = 5, UNKNOWN_TYPE = 6;
 	// Decides whether or not we compute the transition probability at run time or can pre-compute
 	public static final int computeAtRunTime = -1;
+	public static HashMap<Integer, Double> LOG_FACTORIAL = new HashMap<Integer, Double>();
 
 	/* 
 	 * Gets the transition probability from state s1 -> state s2
@@ -42,6 +44,13 @@ public class State
 	 */
 	public static double getTransitionProbability(State s1, State s2, int lengthOfIntron, int lengthOfExon)
 	{
+		// TODO see if this an appropriate fix
+		double intronLength = 0;
+		if ( lengthOfIntron < 0 )
+			intronLength = 0.0000001;
+		else
+			intronLength = (double)lengthOfIntron;
+		//System.out.println("Rate of occurence: " + rateOfOccurenceOfCNV );
 		Double transitionProb = 0.0;
 		if (s1 == null || s2 == null)
 		{
@@ -51,7 +60,8 @@ public class State
 
 		if (s1.equals(s2) && s1.stateName!=NORMAL) // self loop in Markov Model
 		{
-			transitionProb = (Math.max(1 - ( (double)lengthOfIntron / s1.E_LengthOfState ), 0.0));
+			//TODO: sigh yet another hack
+			transitionProb = (Math.max(1 - ( (double)intronLength / s1.E_LengthOfState ), 0));
 			// returning a positive number in the event that the length of the intron > expected length of the CNV
 		}	
 		else if (s1.equals(s2) && s1.stateName == NORMAL) // normal -> normal
@@ -61,14 +71,14 @@ public class State
 			double lambda = rateOfOccurenceOfCNV * lengthOfExon;
 			transitionProb = lambda*Math.exp(-lambda);
 			transitionProb = 1 - 5*transitionProb;
-			if (transitionProb < 0)
+			if (transitionProb < 0) // TODO is this correct?
 				transitionProb = 0.0;
 		}
 		else if (! s1.equals(s2))
 		{
 			if (s2.stateName == NORMAL)
 			{
-				transitionProb = (double)lengthOfIntron / s1.E_LengthOfState;
+				transitionProb = (double)intronLength / s1.E_LengthOfState;
 				// sanity checking in the event that length of the intron > expected length of the CNV
 				if (transitionProb < 0)
 					transitionProb = 0.0;
@@ -82,11 +92,12 @@ public class State
 				double lambda = rateOfOccurenceOfCNV * lengthOfExon;
 				transitionProb = lambda*Math.exp(-lambda);
 
+				/*
 				if (transitionProb < 0)
 					transitionProb = 0.0;
 				else if (transitionProb > 1.0)
 					transitionProb = 1.0;
-
+				 */
 			}
 			else transitionProb = 0.0;
 		}
@@ -141,6 +152,7 @@ public class State
 						else if (stateName.equals("CHROMATIN_CHANGE"))
 							s.stateName = State.CHROMATIN_CHANGE;
 					}
+					//System.out.println(stateName);
 					String fieldName = lineElements[1].split("=")[0].trim();
 					String fieldValue = line.split("=")[1].trim();
 					// TODO make this neater
@@ -151,8 +163,12 @@ public class State
 					else if (fieldName.equals("E_LengthOfState"))
 						s.E_LengthOfState = Integer.parseInt(fieldValue);
 					states.put(stateName, s);
-				}
+				}			
 			}
+			// TODO: maybe not correct? Change so it different for each state
+			rateOfOccurenceOfCNV = (double)states.get("HOMOZYGOUS_DELETE").E_LengthOfState/3000000000.0	;//states.get("NORMAL").E_LengthOfState;
+			//System.out.println("Rate of occurrence: " + State.rateOfOccurenceOfCNV + "\t" + 
+			//		states.get("HOMOZYGOUS_DELETE").E_LengthOfState + "\t" + states.get("NORMAL").E_LengthOfState);
 		} catch (IOException e)
 		{
 			System.err.println("Error: Unable to process parameter file");
@@ -174,7 +190,7 @@ public class State
 			case State.COPY_NEUTRAL_LOH: 	return "Copy Neutral Loss of Heterozygosity"; 
 			case State.INSERTION: 			return "Insertion"; 
 			case State.CHROMATIN_CHANGE: 	return "Chromatin Change"; 
-			case State.UNKNOWN_TYPE: 		return "Unknown Type"; 
+			//case State.UNKNOWN_TYPE: 		return "Unknown Type"; 
 		}
 		return "";
 	}
@@ -251,7 +267,7 @@ public class State
 		// TODO: how to combine the two?
 		return (probFPKM * probSNPs);
 	}
-	
+
 	public static Double getEmissionProbability(Exon exon, Exon expected, Exon stdDev, State s)
 	{
 		// Emission probability is the probability of observing that value given the distribution parameters
@@ -284,6 +300,13 @@ public class State
 			probFPKM = Math.exp(-lambda) * Math.pow(lambda, (int)observedFPKM) / cern.jet.math.Arithmetic.factorial((int)observedFPKM);
 		}	
 
+		/*
+		double lambdaSNPs = s.rpkmRatio*expectedSNPs;
+		double probSNPs = -lambdaSNPs * ((int)observedSNPs * Math.log(lambdaSNPs)) - logFactorial((int)observedSNPs); //cern.jet.math.Arithmetic.factorial((int)observedSNPs);
+		double lambdaFPKM = s.rpkmRatio*expectedFPKM;
+		double probFPKM = -lambdaFPKM * ((int)observedFPKM * Math.log(lambdaFPKM)) - logFactorial((int)observedFPKM); //cern.jet.math.Arithmetic.factorial((int)observedFPKM);
+		 */
+
 		// handling case where all the baselines are equal
 		if (s.rpkmRatio*expectedFPKM == 0.0)
 			if (observedFPKM == s.rpkmRatio*expectedFPKM)
@@ -296,8 +319,89 @@ public class State
 			else
 				probSNPs = 0;
 
+
+		if (Double.isInfinite(probSNPs) || Double.isNaN(probSNPs)  || probSNPs == 0.0)
+		{
+			//System.out.println("!!!");
+			probSNPs = 10e-30;
+		}
+		if (Double.isInfinite(probFPKM) || Double.isNaN(probFPKM) || probFPKM == 0.0)
+		{
+			//System.out.println("!!!");
+			probFPKM = 10e-30;
+		}
+
+
 		// TODO: how to combine the two?
 		return (probFPKM * probSNPs);
+	}
+
+	private static double logFactorial(int number)
+	{
+		// storing some numbers for quicker computation
+		Double value = LOG_FACTORIAL.get(number);
+		if (value == null)
+		{
+			value = 0.0;
+			for (int i=1; i<=number; i++)
+			{
+				value += Math.log(i);
+			}
+			LOG_FACTORIAL.put(number, value);
+		}
+		return value;
+	}
+
+	public static double getLogEmissionProbability(Exon exon, Exon expected, Exon stdDev,
+			State s)
+	{
+		// Emission probability is the probability of observing that value given the distribution parameters
+		// the expected values are computed assuming poisson. Hence for other states, we multiple the mean
+		// by the ratios for that state. 
+
+		double observedSNPs = exon.SNPs;
+		double expectedSNPs = expected.SNPs; 
+		double observedFPKM = exon.FPKM;
+		double expectedFPKM = expected.FPKM;
+
+		double lambdaSNPs = s.snpRatio*expectedSNPs;
+		double logProbSNPs = -lambdaSNPs + ((int)observedSNPs * Math.log(lambdaSNPs)) - logFactorial((int)observedSNPs);
+		double lambdaFPKM = s.rpkmRatio*expectedFPKM;
+		double logProbFPKM = -lambdaFPKM + ((int)observedFPKM * Math.log(lambdaFPKM)) - logFactorial((int)observedFPKM);
+
+
+		// handling case where all the baselines are equal, since log(0) = Inf 
+		if (s.rpkmRatio*expectedFPKM == 0.0)
+			if (observedFPKM == s.rpkmRatio*expectedFPKM)
+				logProbFPKM = 0; // log 1 = 0; expected = observed = 0 so it fits with the expectation
+			else
+				logProbFPKM = Double.NEGATIVE_INFINITY;
+		//else 
+		//logProbFPKM = -4000000; // log 0 = ? TODO
+		if (s.snpRatio*expectedSNPs == 0.0)
+			if (observedSNPs == s.snpRatio*expectedSNPs)
+				logProbSNPs = 0;
+			else
+				logProbSNPs = Double.NEGATIVE_INFINITY;
+		//else
+		//logProbSNPs = -4000000; // log 0 = ?
+
+		if (exon.posLeft == 47950286)
+			System.out.println("$$\t" + s.stateName + "\t" + (logProbFPKM + logProbSNPs));
+		/*
+		if (Double.isInfinite(probSNPs) || Double.isNaN(probSNPs) /* || probSNPs == 0.0)
+		{
+			System.out.println("!!!");
+			probSNPs = 10e-30;
+		}
+		if (Double.isInfinite(probFPKM) || Double.isNaN(probFPKM) /* || probFPKM == 0.0*)
+		{
+			System.out.println("!!!");
+			probFPKM = 10e-30;
+		}
+		 */
+		// TODO: how to combine the two?
+		return (logProbFPKM + logProbSNPs);
 	}
 
 }

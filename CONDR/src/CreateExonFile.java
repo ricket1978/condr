@@ -1,4 +1,6 @@
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.RandomAccessFile;
 import java.io.Writer;
@@ -59,9 +61,23 @@ public class CreateExonFile
 				// TODO add chromosome checks
 				if (usingPileup)
 				{
+					BufferedReader br = new BufferedReader(new FileReader(mappedReadsFileName));
+					System.out.println("Reading expression file....");
+					ArrayList<Expression> Expressions = new ArrayList<Expression>();
+					currentTime = System.currentTimeMillis();
+					Expressions = Expression.readExon(expressionFileName, chromosome);
+					totalExprReadTime = (System.currentTimeMillis() - currentTime)/1000F;
+					numberOfExpr = Expressions.size();
+
+					System.out.println("Calculating FPKMs....");
+					currentTime = System.currentTimeMillis();
+					Exon.getFPKM(Expressions, Exons);
+					totalFPKMCalcTime = (System.currentTimeMillis() - currentTime)/1000F;
+					Expressions.removeAll(Expressions); // explicitly deleting to free up memory
+
 					System.out.println("Reading pileup file, calculating coverage and SNPs....");
 					currentTime = System.currentTimeMillis();
-					Pileup.readData(Exons, mappedReadsFileName);
+					Pileup.readData(Exons, br, mappedReadsFileName);
 					totalReadsReadTime = (System.currentTimeMillis() - currentTime)/1000F;
 				}
 				else
@@ -108,7 +124,7 @@ public class CreateExonFile
 				Writer output = new BufferedWriter(new FileWriter(outputFileName));
 				for(Exon e : Exons)
 				{
-					System.out.println(e);
+					//System.out.println(e);
 					output.write(e + "\n");
 				}
 				output.close();
@@ -181,7 +197,7 @@ public class CreateExonFile
 			}
 
 			if (exonFileName.equals("") 
-					|| referenceDirectory.equals("") || chromosomes.isEmpty()
+					|| chromosomes.isEmpty()
 					|| outputFileName.equals("")
 					|| ((!usingPileup && (expressionFileName.equals("") || mappedReadsFileName.equals(""))) 
 							&& (usingPileup && mappedReadsFileName.equals("")))) 
