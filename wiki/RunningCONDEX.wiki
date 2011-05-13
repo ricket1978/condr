@@ -36,8 +36,8 @@ Probability
 
 = Description =
 The rough outline of steps followed are:
-* read measurements from samples acting as baseline
-* calculate the average measurements
-* read measurements from sample to be called
-* using forward-backward algorithm calculate the most likely state
-* output the measurements with the most likely state
+ * read measurements from samples acting as baseline
+ * calculate the average measurements
+ * read measurements from sample to be called
+ * using forward-backward algorithm calculate the most likely state
+ * output the measurements with the most likely state
