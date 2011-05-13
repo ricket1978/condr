@@ -4,16 +4,26 @@
 = Introduction =
 CONDEX reads in the sample to be called, the other samples used as a baseline, and finds the most probable state for each exon. The output format is tab delimited and contains the following fields:
 {{{
-chr
-need to fill in
+chr 
+exon_start_position 
+exon_end_position 
+gene_description 
+number_of_heterozygous_sites 
+number_of_reads_in_exon 
+state
+chi-square statistic
+pValue
+average_number_of_heterozygous_sites
+average_number_of_reads_in_exon 
 }}}
+The final column is the ground truth state (only relevant for simulations) 
 
 = Options =
  * `-e <exon file>`: name of file with the list of exons in the chromosome
  * `-o <output file>` : name of output file. Default is StdOut
  * `-c <start>-<end>` : start and ending chromosomes analyzed (not used)
  * `-b <baseline files>` : comma separated list of exon files to be used as baselines (no spaces separating the list)
- * `-p <parameter file>` : name of file with the values of parameters. [something example]
+ * `-p <parameter file>` : name of file with the values of parameters. [http://code.google.com/p/condr/downloads/detail?name=PileupToExon_04212011.jar&can=2&q= example]
  * `-threshold <value>` : threshold above which to call as CNV (allows more calling of normal state)
  * `-t` : prints timing metrics
 
