@@ -23,7 +23,7 @@ The final column is the ground truth state (only relevant for simulations)
  * `-o <output file>` : name of output file. Default is StdOut
  * `-c <start>-<end>` : start and ending chromosomes analyzed (not used)
  * `-b <baseline files>` : comma separated list of exon files to be used as baselines (no spaces separating the list)
- * `-p <parameter file>` : name of file with the values of parameters. [http://code.google.com/p/condr/downloads/detail?name=PileupToExon_04212011.jar&can=2&q= example]
+ * `-p <parameter file>` : name of file with the values of parameters. [http://code.google.com/p/condr/downloads/detail?name=SimulationParameterFile.04102011.length200000.rate500000&can=2&q= example]. "//" can be used for comments within the file
  * `-threshold <value>` : threshold above which to call as CNV (allows more calling of normal state)
  * `-t` : prints timing metrics
 
