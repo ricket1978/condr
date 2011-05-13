@@ -1,8 +1,3 @@
-
-/*
- * Stores and manipulates relevant exon information
- */
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -12,6 +7,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 
+/**
+ * Stores and manipulates relevant exon information
+ * @author arthiramachandran
+ *
+ */
 public class Exon
 {
 	int chr;
@@ -44,8 +44,10 @@ public class Exon
 		this.likelihoodRatio = 0;
 	}
 
-	/*
-	 *  parse a line of data (modified SAM format) and input appropriate fields
+	/**
+	 * parse a line of data (modified SAM format) and input appropriate fields
+	 * @param dataLine
+	 * @param fromExonFile
 	 */
 	Exon(String dataLine, boolean fromExonFile)
 	{
@@ -77,7 +79,7 @@ public class Exon
 				this.posLeft = Integer.parseInt(fields[1]);
 				this.posRight = Integer.parseInt(fields[2]);
 				this.geneName = fields[3];
-				double length = this.posRight - this.posLeft;
+				//double length = this.posRight - this.posLeft;
 				this.FPKM = Double.parseDouble(fields[5]); //length;
 				this.SNPs = Double.parseDouble(fields[4]); //length;
 			}
@@ -111,19 +113,15 @@ public class Exon
 	{
 		return("chr" + this.chr + "\t" + this.posLeft + "\t" + this.posRight + "\t" + this.geneName + "\t" + 
 				this.SNPs + "\t" + this.FPKM + "\t" + this.state.stateName + "\t" + this.likelihoodRatio + "\t" + this.pValue);
-
-		//return(this.FPKM + "\t" + this.SNPs + "\t" + this.state.stateName);
-
-		/*	return("chr" + this.chr + " (" + this.posLeft + ", " + this.posRight + ") " + 
-				this.geneName + "\t" + this.FPKM + "\t" + this.SNPs + "\t" + 
-				this.numberOfOverlappingReads + "\t" + this.SNPPositions.keySet().size() + "\t" + this.referenceSequence);
-		 */
 	}
 
-	/*
-	 *  Parses the file (br)
-	 *  Reads file until the next chromosome
-	 *  Loads into an array of Exon objects
+	/**
+	 * Parses the file (br)
+	 * Reads file until the next chromosome
+	 * Loads into an array of Exon objects
+	 * @param exonFileName
+	 * @param chromosome
+	 * @return Array of exons
 	 */
 	public static ArrayList<Exon> readExon(String exonFileName, int chromosome)
 	{
@@ -161,9 +159,12 @@ public class Exon
 		
 	}
 
-	/*
-	 *  Given an array of exons and expression data, calculate the FPKM levels per exon
-	 *  Expressions & Exons should be sorted in order of beginning position
+	/**
+	 * Given an array of exons and expression data, calculate the FPKM levels per exon <p>
+	 * Expressions & Exons should be sorted in order of beginning position <p>
+	 * Think its deprecated
+	 * @param Expressions
+	 * @param Exons
 	 */
 	static void getFPKM(ArrayList<Expression> Expressions, ArrayList<Exon> Exons)
 	{
@@ -227,8 +228,10 @@ public class Exon
 		}
 	}
 
-	/*
-	 * Reads reference file and computes the reference sequence for the exon
+	/**
+	 * Reads reference file and computes the reference sequence for the exon <p>
+	 * Deprecated
+	 * @param inputReference
 	 */
 	public void getReferenceSequence(RandomAccessFile inputReference)
 	{
@@ -260,8 +263,12 @@ public class Exon
 		this.referenceSequence = refRead;
 	}
 
-	/*
-	 * Gets the number of differences (ie SNPs) between the two sequences
+	/**
+	 * Gets the number of differences (ie SNPs) between the two sequences <p>
+	 * Deprecated
+	 * @param s1
+	 * @param s2
+	 * @return
 	 */
 	public static int getNumberOfDifferences(String s1, String s2)
 	{
@@ -280,8 +287,11 @@ public class Exon
 		return count;
 	}
 
-	/*
-	 * Gets the number of SNPs per exon
+	/**
+	 * Gets the number of SNPs per exon <p>
+	 * Deprecated
+	 * @param exons
+	 * @param mappedReads
 	 */
 	public static void getSNPs(ArrayList<Exon> exons, ArrayList<MappedReads> mappedReads)
 	{
@@ -327,6 +337,12 @@ public class Exon
 		return (this.posRight-this.posLeft+1);
 	}
 
+	/**
+	 * Calculated the positions of the SNPs <p>
+	 * Deprecated
+	 * @param exon
+	 * @param read
+	 */
 	private static void calculateSNPPositions(Exon exon, MappedReads read)
 	{
 		String referenceSeq = "";
@@ -347,7 +363,12 @@ public class Exon
 
 	}
 
-	// Does exon (this) overlap with mapped reads?
+	/**
+	 * Does exon (this) overlap with mapped reads? <p>
+	 * Deprecated
+	 * @param mappedRead
+	 * @return
+	 */
 	private boolean overlaps(MappedReads mappedRead)
 	{
 		if (this.chr == mappedRead.chr)
@@ -364,7 +385,10 @@ public class Exon
 			return false;
 	}
 
-	// Sort exons in order of their genomic position
+	/**
+	 * Sort exons in order of their genomic position
+	 * @param data list of exons
+	 */
 	static void sortExons(ArrayList<Exon> data)
 	{
 		final Comparator<Exon> order =
@@ -383,6 +407,11 @@ public class Exon
 			Collections.sort(data, order);
 	}
 
+	/**
+	 * Does this exon contain the specified genomic position?
+	 * @param position
+	 * @return true/false
+	 */
 	public boolean containsPosition(int position)
 	{
 		if (this.posLeft <= position && position <= this.posRight)
@@ -391,6 +420,10 @@ public class Exon
 			return false;
 	}
 
+	/**
+	 * Huh?
+	 * @return
+	 */
 	public String inputData()
 	{
 		return(this.chr + "\t" + this.posLeft + "\t" + this.posRight + "\t" + this.geneName + "\t" + 
@@ -398,6 +431,12 @@ public class Exon
 
 	}
 
+	/**
+	 * Reads exon file; stores necessary info in array of exons
+	 * @param exonFileName name of file with list of exons
+	 * @param chromosome
+	 * @return array of exons
+	 */
 	public static ArrayList<Exon> readAndStoreExonFile(String exonFileName, int chromosome)
 	{
 		ArrayList<Exon> exons = new ArrayList<Exon>();
@@ -420,6 +459,12 @@ public class Exon
 		return exons;
 	}
 
+	/**
+	 * Computes the expected value for each exon by average the values in the baseline files
+	 * @param baselineExonFileNames array of names of the baseline files (the samples that to be compared against)
+	 * @param chromosome chromosome
+	 * @return list of exons with values of coverage/heterozygosity being the averages for the baselines
+	 */
 	public static ArrayList<Exon> calculateExpectedValues(ArrayList<String> baselineExonFileNames, int chromosome)
 	{
 		ArrayList<Exon> baselineExonValues = new ArrayList<Exon>();
@@ -468,6 +513,13 @@ public class Exon
 		return baselineExonValues;
 	}
 
+	/**
+	 * Computes the std deviation values for each exon by average the values in the baseline files
+	 * @param baselineExonFileNames array of names of the baseline files (the samples that to be compared against)
+	 * @param chromosome chromosome
+	 * @param expectedValues list of expected values per exon
+	 * @return list of exons with values of coverage/heterozygosity being the std deviation for the baselines
+	 */
 	public static ArrayList<Exon> calculateStdDevValues(ArrayList<String> baselineExonFileNames, int chromosome, ArrayList<Exon> expectedValues)
 	{
 		ArrayList<Exon> baselineExonStdDevValues = new ArrayList<Exon>();
@@ -519,7 +571,12 @@ public class Exon
 		return baselineExonStdDevValues;
 	}
 
-	// TODO: do this CORRECTLY!!!
+	/**
+	 * Deprecated
+	 * @param baselineExonFileNames
+	 * @param i
+	 * @return
+	 */
 	public static ArrayList<Exon> calculateNormalizationFactor(	ArrayList<String> baselineExonFileNames, int i)
 	{
 		ArrayList<Exon> minimalValues = new ArrayList<Exon>();	
@@ -573,11 +630,14 @@ public class Exon
 		return minimalValues;
 	}
 
+	/**
+	 * Find the k parameter for the Gamma distribution describing the genomewide coverage distribution
+	 * <a href="http://en.wikipedia.org/wiki/Gamma_distribution#Maximum_likelihood_estimation">MLE for Gamma</a>
+	 * @param exons list of observation values per exon
+	 * @return value of k parameter
+	 */
 	public static double getGenomeWideGammaParametersK(ArrayList<Exon> exons)
 	{
-		/*
-		 * formulas from wiki page: http://en.wikipedia.org/wiki/Gamma_distribution#Maximum_likelihood_estimation
-		 */
 		int N = exons.size();
 		double sumExonCoverage = 0, sumLnExonCoverage = 0;
 		for (Exon e : exons)
@@ -592,6 +652,13 @@ public class Exon
 		return k;
 	}
 
+	/**
+	 * Find the Theta parameter for the Gamma distribution describing the genomewide coverage distribution
+	 * <a href="http://en.wikipedia.org/wiki/Gamma_distribution#Maximum_likelihood_estimation">MLE for Gamma</a>
+	 * @param exons list of observation values per exon
+	 * @param k gamma parameter k
+	 * @return value of Theta parameter
+	 */
 	public static double getGenomeWideGammaParametersTheta(ArrayList<Exon> exons, double k)
 	{
 		double sumExonCoverage = 0;
@@ -602,11 +669,14 @@ public class Exon
 		return theta;
 	}
 
+	/**
+	 * Find the k parameter for the Gamma distribution describing the genomewide heterozygosity distribution
+	 * <a href="http://en.wikipedia.org/wiki/Gamma_distribution#Maximum_likelihood_estimation">MLE for Gamma</a>
+	 * @param exons list of observation values per exon
+	 * @return value of k parameter
+	 */
 	public static double getGenomeWideGammaParametersSNPsK(ArrayList<Exon> exons)
 	{
-		/*
-		 * formulas from wiki page: http://en.wikipedia.org/wiki/Gamma_distribution#Maximum_likelihood_estimation
-		 */
 		int N = exons.size();
 		double sumExonSNPs = 0, sumLnExonSNPs = 0;
 		for (Exon e : exons)
@@ -621,6 +691,13 @@ public class Exon
 		return k;
 	}
 
+	/**
+	 * Find the Theta parameter for the Gamma distribution describing the genomewide heterozygosity distribution
+	 * <a href="http://en.wikipedia.org/wiki/Gamma_distribution#Maximum_likelihood_estimation">MLE for Gamma</a>
+	 * @param exons list of observation values per exon
+	 * @param k gamma parameter k
+	 * @return value of Theta parameter
+	 */
 	public static double getGenomeWideGammaParametersSNPsTheta(ArrayList<Exon> exons, double k)
 	{
 		double sumExonSNPs = 0;

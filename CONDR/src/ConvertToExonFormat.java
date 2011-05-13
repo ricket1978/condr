@@ -6,16 +6,17 @@ import java.io.InputStreamReader;
 import java.io.Writer;
 import java.util.ArrayList;
 
+/**
+ * File Format of output (tab delimited)
+ * chromosome exonStart exonEnd geneName FPKM/coverage SNP levels/BAF
+ * 
+ * .pileup -> .exon
+ * @author arthiramachandran
+ *
+ */
 public class ConvertToExonFormat
 {
 	// TODO: Convert to script maybe? Or leave as Java?
-	/*
-	 * File Format of output (tab delimited)
-	 * chromosome exonStart exonEnd geneName FPKM/coverage SNP levels/BAF
-	 * 
-	 * .pileup -> .exon
-	 * 
-	 */
 	static ArrayList<Exon> Exons = new ArrayList<Exon>();
 
 	static String exonCaptureArrayFileName = "";
@@ -77,7 +78,7 @@ public class ConvertToExonFormat
 				{
 					System.out.println("Reading pileup file, calculating coverage and SNPs....");
 					currentTime = System.currentTimeMillis();
-					Pileup.readData(Exons, br, mappedReadsFileName);
+					Pileup.readData(Exons, br);
 					totalReadsReadTime += (System.currentTimeMillis() - currentTime)/1000F;
 				}
 
@@ -109,6 +110,10 @@ public class ConvertToExonFormat
 	}
 
 
+	/**
+	 * Parses arguments to program
+	 * @param arguments list of arguments
+	 */
 	private static void parseArguments(String arguments[])
 	{
 		/*

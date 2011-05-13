@@ -1,11 +1,14 @@
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-
+/**
+ * Class to handle pileup files
+ * @author arthiramachandran
+ *
+ */
 public class Pileup
 {
 	int position;
@@ -41,6 +44,12 @@ public class Pileup
 			homozygous = 1;
 	}
 
+	/**
+	 * Reads and parses the pileup file
+	 * 
+	 * @param br buffered reader to the pileup file
+	 * @return hashmap of the pileups 
+	 */
 	public static HashMap<Integer, Pileup> readData(BufferedReader br)
 	{
 		HashMap<Integer, Pileup> data = new HashMap<Integer, Pileup>();
@@ -60,10 +69,13 @@ public class Pileup
 		return data;
 	}
 
-	/*
+	/**
 	 * Reads the pileup and simultaneously updates the exon lists with appropriate values
+	 * 
+	 * @param exons list of exons to be populated with values from the pileup
+	 * @param br buffered reader to pileup file
 	 */
-	public static void readData(ArrayList<Exon> exons, BufferedReader br, String pileupFileName)
+	public static void readData(ArrayList<Exon> exons, BufferedReader br)
 	{
 		int exonIndex = 0;
 		// TODO: move this up so pileups are stored between iterations
