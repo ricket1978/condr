@@ -18,7 +18,7 @@ public class ConvertToExonFormat
 	 */
 	static ArrayList<Exon> Exons = new ArrayList<Exon>();
 
-	static String exonFileName = "";
+	static String exonCaptureArrayFileName = "";
 	static String mappedReadsFileName = "";
 	static String outputFileName = "";
 	static ArrayList<Integer> chromosomes = new ArrayList<Integer>();
@@ -59,16 +59,21 @@ public class ConvertToExonFormat
 				currentTime = System.currentTimeMillis();
 				String exonFileNameByChr = "";
 				if (chromosomes.size() == 1)
-					exonFileNameByChr = exonFileName;
+					exonFileNameByChr = exonCaptureArrayFileName;
 				else
+					/*
+					 * need to be able to handle exons by separate files
+					 * need to be able to handle exons and one full file
+					 * any specification of names should take place outside of this program
+					 */
 					// TODO: hardcoding in here
-					exonFileNameByChr = exonFileName + "Chr" + chromosome;
+					exonFileNameByChr = exonCaptureArrayFileName + ".chr" + chromosome + ".txt";
 				Exons = Exon.readExon(exonFileNameByChr, chromosome);
 				totalExonReadTime += (System.currentTimeMillis() - currentTime)/1000F;
 				Exon.sortExons(Exons);
 
 				// TODO add chromosome checks
-				if (usingPileup)
+				//if (usingPileup)
 				{
 					System.out.println("Reading pileup file, calculating coverage and SNPs....");
 					currentTime = System.currentTimeMillis();
@@ -82,7 +87,7 @@ public class ConvertToExonFormat
 				for(Exon e : Exons)
 				{
 					//System.out.println(e);
-					output.write(e + "\n");
+					output.write(e + "\t" + e.numPileupPositions + "\n");
 				}
 				output.close();
 			}
@@ -123,7 +128,7 @@ public class ConvertToExonFormat
 			{
 				String arg = arguments[index];
 				if (arg.equals("-e"))
-					exonFileName = arguments[index + 1];
+					exonCaptureArrayFileName = arguments[index + 1];
 				else if (arg.equals("-sam"))
 					mappedReadsFileName = arguments[index + 1];
 				else if (arg.equals("-pileup"))
@@ -145,7 +150,7 @@ public class ConvertToExonFormat
 				}
 			}
 
-			if (exonFileName.equals("") 
+			if (exonCaptureArrayFileName.equals("") 
 					|| chromosomes.isEmpty()
 					|| outputFileName.equals("")) 
 			{
@@ -153,7 +158,7 @@ public class ConvertToExonFormat
 				System.err.println("java ConvertToExonFormat -e <exonFileName> " +  
 						"-pileup <pileup fileName> " + 
 						"-c <chromosomes (start-end)> " + "-o <output file name>");
-				System.out.println(exonFileName);
+				System.out.println(exonCaptureArrayFileName);
 				System.out.println(chromosomes);
 				System.out.println(outputFileName);
 				System.out.println(mappedReadsFileName);

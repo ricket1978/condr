@@ -25,6 +25,9 @@ public class Exon
 	ArrayList<MappedReads> reads;
 	HashMap<Integer, Integer> SNPPositions;
 	State state;
+	public double numPileupPositions;
+	public double likelihoodRatio;
+	public double pValue;
 
 	public static final int READLENGTH = 50;
 
@@ -36,7 +39,9 @@ public class Exon
 		this.SNPs = 0;
 		this.reads = new ArrayList<MappedReads>();
 		this.numberOfOverlappingReads = 0;
+		this.numPileupPositions = 0;
 		this.SNPPositions = new HashMap<Integer, Integer>();
+		this.likelihoodRatio = 0;
 	}
 
 	/*
@@ -47,45 +52,51 @@ public class Exon
 		String[] fields = dataLine.split("\t");
 		try
 		{
+			//this.chr  = Integer.parseInt(fields[0]);
 			this.chr  = Integer.parseInt(fields[0].substring(3));
 		}catch(NumberFormatException e)
 		{
 			this.chr = 0; // for now, ignore X, Y, M chromosomes
+		}catch(Exception e)
+		{
+			System.err.println("Error in reading exon file: "+ e.getMessage());
+			System.err.println("Errored exon data: " + dataLine);
+			e.printStackTrace();	
 		}
 		try
 		{
-		if (fromExonFile)
-		{
-			/*
+			if (fromExonFile)
+			{
+				/*
 			this.posLeft = Integer.parseInt(fields[1]);
 			this.posRight = Integer.parseInt(fields[1]);
 			this.geneName = fields[0];
 			this.FPKM = Double.parseDouble(fields[4]);
 			this.SNPs = Double.parseDouble(fields[3]);
-			*/
-			this.posLeft = Integer.parseInt(fields[1]);
-			this.posRight = Integer.parseInt(fields[2]);
-			this.geneName = fields[3];
-			this.FPKM = Double.parseDouble(fields[5]);
-			this.SNPs = Double.parseDouble(fields[4]);
-			
-		}
-		else
-		{
-			/*
+				 */
+				this.posLeft = Integer.parseInt(fields[1]);
+				this.posRight = Integer.parseInt(fields[2]);
+				this.geneName = fields[3];
+				double length = this.posRight - this.posLeft;
+				this.FPKM = Double.parseDouble(fields[5]); //length;
+				this.SNPs = Double.parseDouble(fields[4]); //length;
+			}
+			else
+			{
+				/*
 			this.posLeft = Integer.parseInt(fields[5]);
 			this.posRight = Integer.parseInt(fields[6]);
 			this.geneName = fields[7];
-			*/
-			this.posLeft = Integer.parseInt(fields[1]);
-			this.posRight = Integer.parseInt(fields[1]);
-			this.geneName = fields[0];
-			this.FPKM = 0;
-			this.SNPs = 0;
-			this.reads = new ArrayList<MappedReads>();
-			this.numberOfOverlappingReads = 0;
-			this.SNPPositions = new HashMap<Integer, Integer>();
-		}
+				 */
+				this.posLeft = Integer.parseInt(fields[1]);
+				this.posRight = Integer.parseInt(fields[2]);
+				//this.geneName = fields[0];
+				this.FPKM = 0;
+				this.SNPs = 0;
+				this.reads = new ArrayList<MappedReads>();
+				this.numberOfOverlappingReads = 0;
+				this.SNPPositions = new HashMap<Integer, Integer>();
+			}
 		}catch(Exception e)
 		{
 			System.err.println("Error in reading exon file "+ e.getMessage());
@@ -99,7 +110,7 @@ public class Exon
 	public String toString()
 	{
 		return("chr" + this.chr + "\t" + this.posLeft + "\t" + this.posRight + "\t" + this.geneName + "\t" + 
-				this.SNPs + "\t" + this.FPKM + "\t" + this.state.stateName);
+				this.SNPs + "\t" + this.FPKM + "\t" + this.state.stateName + "\t" + this.likelihoodRatio + "\t" + this.pValue);
 
 		//return(this.FPKM + "\t" + this.SNPs + "\t" + this.state.stateName);
 
@@ -126,6 +137,7 @@ public class Exon
 				Exon exon = new Exon(line, false);
 				exons.add(exon);
 			}
+			br.close();
 		} catch (IOException e)
 		{
 			System.err.println("Error: Unable to process exon file");
@@ -133,7 +145,20 @@ public class Exon
 			System.exit(0);
 		}
 
+		/* do this only when reading the exon files. not the pileup */
+		
+		//normalize coverage by the genome-wide average
+		/*
+		double genomeWideAverageCoverage = 0;
+		for(Exon e : exons)
+			genomeWideAverageCoverage += e.FPKM;
+		System.out.println("Genome wide Avg (from normalization): " + genomeWideAverageCoverage);
+		genomeWideAverageCoverage = genomeWideAverageCoverage/exons.size();
+		for(Exon e : exons)
+			e.FPKM = e.FPKM/genomeWideAverageCoverage;
+			*/
 		return exons;
+		
 	}
 
 	/*
@@ -167,7 +192,7 @@ public class Exon
 					numberOfMovedExonPositions++;
 				}
 			}
-			*/
+			 */
 
 			// go to the first transcript that in the exon
 			while( exprIndex < Expressions.size() 
@@ -498,7 +523,7 @@ public class Exon
 	public static ArrayList<Exon> calculateNormalizationFactor(	ArrayList<String> baselineExonFileNames, int i)
 	{
 		ArrayList<Exon> minimalValues = new ArrayList<Exon>();	
-		
+
 		// assumes that the values are multiples of some common factor
 		// makes sense since they are all computed by dividing a whole number by the exon length
 		for(String fileName : baselineExonFileNames)
@@ -546,6 +571,64 @@ public class Exon
 				e.FPKM = 1;
 		}
 		return minimalValues;
+	}
+
+	public static double getGenomeWideGammaParametersK(ArrayList<Exon> exons)
+	{
+		/*
+		 * formulas from wiki page: http://en.wikipedia.org/wiki/Gamma_distribution#Maximum_likelihood_estimation
+		 */
+		int N = exons.size();
+		double sumExonCoverage = 0, sumLnExonCoverage = 0;
+		for (Exon e : exons)
+		{
+			sumExonCoverage += e.FPKM;
+			if (e.FPKM != 0)
+				sumLnExonCoverage += Math.log(e.FPKM);
+		}
+		System.out.println("Genomewide avg coverage:" + sumExonCoverage/N);
+		double s = Math.log(sumExonCoverage/N) - 1/N * sumLnExonCoverage;
+		double k = ( 3 - s + Math.sqrt( Math.pow(s-3, 2) + 24*s) ) / ( 12 * s );
+		return k;
+	}
+
+	public static double getGenomeWideGammaParametersTheta(ArrayList<Exon> exons, double k)
+	{
+		double sumExonCoverage = 0;
+		for (Exon e : exons)
+			sumExonCoverage += e.FPKM;
+		int N = exons.size();
+		double theta = 1 / (k * N) * sumExonCoverage;
+		return theta;
+	}
+
+	public static double getGenomeWideGammaParametersSNPsK(ArrayList<Exon> exons)
+	{
+		/*
+		 * formulas from wiki page: http://en.wikipedia.org/wiki/Gamma_distribution#Maximum_likelihood_estimation
+		 */
+		int N = exons.size();
+		double sumExonSNPs = 0, sumLnExonSNPs = 0;
+		for (Exon e : exons)
+		{
+			sumExonSNPs += e.SNPs;
+			if (e.SNPs != 0)
+				sumLnExonSNPs += Math.log(e.SNPs);
+		}
+		System.out.println("Genomewide avg snps:" + sumExonSNPs/N);
+		double s = Math.log(sumExonSNPs/N) - 1/N * sumLnExonSNPs;
+		double k = ( 3 - s + Math.sqrt( Math.pow(s-3, 2) + 24*s) ) / ( 12 * s );
+		return k;
+	}
+
+	public static double getGenomeWideGammaParametersSNPsTheta(ArrayList<Exon> exons, double k)
+	{
+		double sumExonSNPs = 0;
+		for (Exon e : exons)
+			sumExonSNPs += e.SNPs;
+		int N = exons.size();
+		double theta = 1 / (k * N) * sumExonSNPs;
+		return theta;
 	}
 
 }

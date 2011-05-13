@@ -34,28 +34,34 @@ public class SimulateExonMeasurements
 		{
 			double randomNumber = Math.random();
 			index = SimulateRegion(ExpectedValues, StdDeviations, "NORMAL", index);
+			if (index == -1)
+				break;
 			if (index > ExpectedValues.size() - 10) break;
 			if (randomNumber < 1.0/HiddenMarkovModel.States.size())
 				index = SimulateRegion(ExpectedValues, StdDeviations, "HOMOZYGOUS_DELETE", index);
 			else if  (randomNumber < 2.0/HiddenMarkovModel.States.size())
 				index = SimulateRegion(ExpectedValues, StdDeviations, "HETEROZYGOUS_DELETE", index);
-			else if  (randomNumber < 3.0/HiddenMarkovModel.States.size())
-				index = SimulateRegion(ExpectedValues, StdDeviations, "COPY_NEUTRAL_LOH", index);
-			else if  (randomNumber < 4.0/HiddenMarkovModel.States.size())
+			//else if  (randomNumber < 3.0/HiddenMarkovModel.States.size())
+				//index = SimulateRegion(ExpectedValues, StdDeviations, "COPY_NEUTRAL_LOH", index);
+			else if (randomNumber < 3.0/HiddenMarkovModel.States.size())
 				index = SimulateRegion(ExpectedValues, StdDeviations, "INSERTION", index);
-			else 
-				index = SimulateRegion(ExpectedValues, StdDeviations, "CHROMATIN_CHANGE", index);
+			else
+				index = SimulateRegion(ExpectedValues, StdDeviations, "DOUBLE_INSERT", index);
+			if (index == -1)
+				break;
+			//else 
+				//index = SimulateRegion(ExpectedValues, StdDeviations, "CHROMATIN_CHANGE", index);
 		}
 
 		for(int i=0; i<exons.size(); i++)
 		{
 			Exon e = exons.get(i);
-			//double origFPKM = ExpectedValues.get(i).FPKM;
+			double origFPKM = ExpectedValues.get(i).FPKM;
 			e.SNPs = getLikelyValue(ExpectedValues.get(i).SNPs*e.state.snpRatio, 
 					StdDeviations.get(i).SNPs);
 			e.FPKM = getLikelyValue(ExpectedValues.get(i).FPKM*e.state.rpkmRatio, 
 					StdDeviations.get(i).FPKM);
-			System.out.println(e); // + "\t||" + origFPKM);
+			System.out.println(e + "\t||" + origFPKM);
 		}
 
 	}
@@ -64,6 +70,8 @@ public class SimulateExonMeasurements
 			ArrayList<Exon> StdDeviations, String stateName, int index)
 	{
 		// TODO: check about Poisson distribution for this
+		if (index >= ExpectedValues.size())
+			return -1;
 		int regionStartPosition = ExpectedValues.get(index).posLeft;
 		//System.out.println(HiddenMarkovModel.States.get(stateName));
 		Poisson dist = new Poisson(HiddenMarkovModel.States.get(stateName).E_LengthOfState, RandomEngine.makeDefault());
@@ -71,12 +79,14 @@ public class SimulateExonMeasurements
 		Exon e = ExpectedValues.get(index);
 		int genomicLength = 0;
 		//for (int i=0; i<10; i++)
+		//for(int seqLength = 0; seqLength <= regionLength; seqLength += (e.posRight - e.posLeft))
 		for(genomicLength = 0; genomicLength <= regionLength; genomicLength = (e.posRight - regionStartPosition))
 		{
 			//if (e.posLeft == 33866544)
 				//System.out.println("##");
 			if (e.SNPs==0.0 && e.FPKM==0.0)
 			{
+				// did this to avoid long stretches of no data where nothing would be called anyways
 				//System.out.println("!!" + e.geneName);
 				e.state = HiddenMarkovModel.States.get("NORMAL");
 			}

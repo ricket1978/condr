@@ -18,12 +18,17 @@ public class Pileup
 	{
 		String[] fields = line.split("\t");
 		position = Integer.parseInt(fields[1]);
-		coverage = Integer.parseInt(fields[4]);
+		coverage = Integer.parseInt(fields[7]);
 		try{
-			chromosome = Integer.parseInt(fields[0].substring(3));
+			chromosome = Integer.parseInt(fields[0]);
 		} catch(NumberFormatException nfe)
 		{
-			chromosome = 0;
+			try{
+				chromosome = Integer.parseInt(fields[0].substring(3));
+			}catch(NumberFormatException nfe2)
+			{
+				chromosome = 0;
+			}
 		}
 		if (fields[2].equalsIgnoreCase(fields[3]))
 			heterozygous = 0;
@@ -94,6 +99,7 @@ public class Pileup
 					if (p.heterozygous != 0 || p.homozygous != 0)
 						e.SNPPositions.put(p.position, p.heterozygous);
 					e.FPKM += p.coverage;
+					e.numPileupPositions ++;
 				}
 
 				while (e.posRight < p.position)
@@ -104,12 +110,15 @@ public class Pileup
 						break;
 
 					// get next exon. initialize with values already loaded from pileup
+					if (e.posLeft == 867769)
+						System.out.println("***" + e + "\t" + e.numPileupPositions + "\t" + e.FPKM/e.numPileupPositions);
 					e = exons.get(exonIndex);
 					for(Pileup pileup : Pileups)
 					{
 						if ( e.containsPosition(pileup.position))
 						{
 							e.FPKM += pileup.coverage;
+							e.numPileupPositions ++;
 							if (pileup.heterozygous != 0 || pileup.homozygous != 0)
 								e.SNPPositions.put(pileup.position, pileup.heterozygous);
 						}
@@ -120,6 +129,9 @@ public class Pileup
 			for(Exon ex : exons)
 			{
 				ex.SNPs = (double)ex.SNPPositions.size(); ///ex.length();
+				if (ex.numPileupPositions == 0)
+					ex.numPileupPositions = 1;
+				ex.FPKM = (double)ex.FPKM/ex.numPileupPositions;
 				//ex.FPKM = (double)ex.FPKM/ex.length();
 			}
 		} catch (IOException e)

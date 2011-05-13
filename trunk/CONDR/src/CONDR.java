@@ -1,5 +1,6 @@
 import java.io.*;
 import java.util.*;
+import cern.jet.random.*;
 
 
 public class CONDR
@@ -39,6 +40,7 @@ public class CONDR
 		 * All files should be sorted in chromosomal order
 		 */
 
+		/*
 		File dir1 = new File (".");
 		File dir2 = new File ("..");
 		try {
@@ -48,15 +50,20 @@ public class CONDR
 		catch(Exception e) {
 			e.printStackTrace();
 		}
-
+		*/
 
 		try
 		{
+			int nSamples = baselineExonFileNames.size();
+			System.out.println("Number of baseline: " + nSamples);
+			if (nSamples < 10)
+				for(String s : baselineExonFileNames)
+					System.out.println(s);
 			for (int chromosome : chromosomes )
 			{
 				double currentTime = 0, totalExonReadTime = 0;
 
-				System.out.println("Chromosome " + chromosome);
+				//System.out.println("Chromosome " + chromosome);
 				System.out.println("Calculating expected values from given files....");
 				ExpectedValues = Exon.calculateExpectedValues(baselineExonFileNames, chromosome);
 				StdDeviations = Exon.calculateStdDevValues(baselineExonFileNames, chromosome, ExpectedValues);
@@ -68,11 +75,19 @@ public class CONDR
 				Exons = Exon.readAndStoreExonFile(exonFileName, chromosome);
 				totalExonReadTime = (System.currentTimeMillis() - currentTime)/1000F;
 				Exon.sortExons(Exons);
-
+				double gammaK = Exon.getGenomeWideGammaParametersK(Exons);
+				double gammaTheta = Exon.getGenomeWideGammaParametersTheta(Exons, gammaK);
+				double gammaSNPsK = Exon.getGenomeWideGammaParametersSNPsK(Exons);;
+				double gammaSNPsTheta = Exon.getGenomeWideGammaParametersSNPsTheta(Exons, gammaK);;
+				System.out.println("K:" + gammaK + "\tTheta:"+gammaTheta);
+				System.out.println("K:" + gammaSNPsK + "\tTheta:"+gammaSNPsTheta);
+				Gamma priorGamma = new Gamma(gammaK, gammaTheta, null);
+				
 				// TODO add chromosome checks
 				System.out.println("Calculating States....");
 				currentTime = System.currentTimeMillis();
-				HiddenMarkovModel.getStates(Exons, ExpectedValues, StdDeviations, parameterFileName, threshold);
+				HiddenMarkovModel.getStates(Exons, ExpectedValues, StdDeviations, parameterFileName, threshold, nSamples, 
+						priorGamma, gammaK, gammaTheta, gammaSNPsK, gammaSNPsTheta);
 				System.out.println("Finished running HMM");
 				double totalStateCalcTime = (System.currentTimeMillis() - currentTime)/1000F;
 
@@ -96,6 +111,8 @@ public class CONDR
 					{
 						Exon exon = new Exon(line, true);
 						exon.state.stateName = Integer.parseInt(line.split("\t")[6]);
+						if (exon.state.stateName > 6)
+							exon.state.stateName = -1;
 						groundTruth.add(exon);
 					}
 				} catch (IOException e)
@@ -125,7 +142,7 @@ public class CONDR
 				}
 
 				// calculate confusion matrix
-				int[][] confusionMatrix = new int[6][6];
+				int[][] confusionMatrix = new int[HiddenMarkovModel.States.size()][HiddenMarkovModel.States.size()];
 				for(int exonIndex = 0; exonIndex < Exons.size(); exonIndex++)
 				{
 					confusionMatrix[groundTruth.get(exonIndex).state.stateName][Exons.get(exonIndex).state.stateName]++;
@@ -190,14 +207,14 @@ public class CONDR
 							if (oldCNV == null)
 								System.out.println("?");
 							if (oldCNV.posEnd !=0)
-								System.out.println("Error in getting the CNVs");
+								System.out.println("Error in getting the CNVs " + oldCNV);
 							oldCNV.posEnd = prevExon.posRight;
 							oldArray.set(oldArray.size()-1, oldCNV);
 							groundTruthCNVs.put(prevState.stateName, oldArray);
 						}
 						else
 						{
-							System.out.println("Weird states: " + prevState.stateName + "\t" + g.state.stateName);
+							System.out.println("Weird states: " + prevState.stateName + "\t" + g.state.stateName + "\t" + g.posLeft +"--");
 						}
 					}
 					prevState = g.state;
@@ -237,7 +254,7 @@ public class CONDR
 						}
 						else
 						{
-							System.out.println("Weird states: " + prevState.stateName + "\t" + g.state.stateName);
+							System.out.println("Weird states: " + prevState.stateName + "\t" + g.state.stateName + "\t" + g.posLeft + "--");
 						}
 					}
 					prevState = g.state;
@@ -301,7 +318,7 @@ public class CONDR
 				}
 
 				// computing in terms of base pairs sequenced that are called correctly
-
+				System.out.println("In sequenced base pairs");
 				// calculate confusion matrix
 				confusionMatrix = new int[6][6];
 				for(int exonIndex = 0; exonIndex < Exons.size(); exonIndex++)
@@ -342,7 +359,8 @@ public class CONDR
 				
 				System.out.println("Threshold: " + threshold);
 				
-				System.out.println("Num_correct; Num_exons; State");
+				/*
+				System.out.println("Num_correct; Num_exons; prevExon state; prevExon.posRight; State");
 				int num_exons = 0;
 				int num_tp = 0;
 				prevExon=groundTruth.get(0);
@@ -356,12 +374,13 @@ public class CONDR
 					if (prevExon.state.stateName != g.state.stateName)
 					{
 						//num_cnvs++;
-						System.out.println("-\t" + num_tp + "\t" + num_exons + "\t" + prevExon.state.stateName + "\t" + prevExon.posRight + "\t" + g.state.stateName);
+						System.out.println("*\t" + num_tp + "\t" + num_exons + "\t" + prevExon.state.stateName + "\t" + prevExon.posRight + "\t" + g.state.stateName);
 						num_exons=0;
 						num_tp=0;
 					}
 					prevExon=g;
 				}
+				*/
 			}
 		} catch (Exception e)
 		{
