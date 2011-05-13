@@ -1,0 +1,30 @@
+#summary README about conversion from pileup format
+#labels Featured
+
+= Introduction =
+
+In CONDEX, we use only per exon measurements. The pileup format contains the read depth and calls on a per basepair format. This method converts from a per basepair to a per exon format. The output format of the file is tab delimited and contains the following fields:
+chr exon_start_position exon_end_position gene_description number_of_heterozgyous_sites number_of_reads_in_exon state
+Initially, the state is the normal state for each exon.
+The final column is the ground truth state (only relevant for simulations)
+
+= Options =
+-e <exon file>
+   : name of file with the list of exons in the chromosome
+-pileup <pileup file>
+   : name of pileup file
+-c <start>-<end>
+   : list of chromosomes being processed (not used)
+-t 
+   : print timing metrics
+-o <output file name>
+   : name of file to output the exon-level measurements. Default is StdOut
+
+= Classes used =
+ConvertToExonFormat
+Pileup
+Exon
+
+
+= Description =
+ConvertToExonFormat contain the main function. It reads in the list of exons as described by the capture array file (which contains the list of exons captures by that array). It then parses the pileup file and adds each base pair to the appropriate exon and updates the measurements for the exon accordingly.
