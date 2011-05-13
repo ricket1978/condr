@@ -1,0 +1,27 @@
+#summary README for running CONDEX
+#labels Featured
+
+= Introduction =
+CONDEX reads in the sample to be called, the other samples used as a baseline, and finds the most probable state for each exon. The output format is tab delimited and contains the following fields:
+{{{
+chr
+need to fill in
+}}}
+
+= Options =
+ * `-e <exon file>`: name of file with the list of exons in the chromosome
+ * `-o <output file>` : name of output file. Default is StdOut
+ * `-c <start>-<end>` : start and ending chromosomes analyzed (not used)
+ * `-b <baseline files>` : comma separated list of exon files to be used as baselines (no spaces separating the list)
+ * `-p <parameter file>` : name of file with the values of parameters. [something example]
+ * `-threshold <value>` : threshold above which to call as CNV (allows more calling of normal state)
+ * `-t` : prints timing metrics
+
+= Classes Used =
+CONDR
+Exon
+HiddenMarkovModel
+State
+Probability
+
+= Description =
