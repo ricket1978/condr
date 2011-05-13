@@ -1,4 +1,9 @@
-
+/**
+ * Class to abstract away some of the probability computations
+ * (so it can be done in log space or normal space)
+ * @author arthiramachandran
+ *
+ */
 public class Probability
 {
 	// all in log space
@@ -22,13 +27,10 @@ public class Probability
 	{
 		double max = Math.max(this.value, p.value);
 		double min = Math.min(this.value, p.value);
-		//if ((max - min) >= 15.7)
 		if ( Double.isInfinite(min) || (max - min) >= 15.7)
 			return new Probability(max);
 		else
 			return new Probability((max + Math.log(1 + Math.exp(-(max - min)))));
-		//real value
-		//System.out.println(Math.log(Math.exp(a) + Math.exp(b)));
 	}
 	
 	public static double add(double a, double d)
@@ -47,13 +49,9 @@ public class Probability
 	{
 		double max = Math.max(a, b);
 		double min = Math.min(a, b);
-		//if ((max - min) >= 15.7)
 		if ( Double.isInfinite(min) || (max - min) >= 15.7)
 			return max;
 		else
 			return (max + Math.log(1 + Math.exp(-(max - min))));
-		//real value
-		//System.out.println(Math.log(Math.exp(a) + Math.exp(b)));
-
 	}
 }

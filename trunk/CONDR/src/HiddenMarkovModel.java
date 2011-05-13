@@ -1,14 +1,13 @@
-
-/*
- * Calculates and stores states according to the exon data
- */
-
 import java.util.ArrayList;
 import java.util.HashMap;
-
 import cern.jet.random.*;
 import cern.jet.random.engine.*;
 
+/**
+ * Calculates and stores states according to the exon data
+ * @author arthiramachandran
+ *
+ */
 public class HiddenMarkovModel
 {
 	static HashMap<String, State> States = new HashMap<String, State>();
@@ -17,18 +16,35 @@ public class HiddenMarkovModel
 	public static final double UNDERFLOW = 10E-10;
 	public static final double UNDERFLOW_factor = 10E10;
 
+	/**
+	 * Initializes the states with the values from the parameter file
+	 * @param parameterFileName name of parameter file
+	 */
 	public static void initialize(String parameterFileName)
 	{
 		States = State.initializeStates(parameterFileName);	
-		//System.out.println("Number of states: " + States.size());
 	}
 
+	/**
+	 * Gets the most likely states given the observations using forward-backward algorithm
+	 * 
+	 * @param exons observed values of each exon (in sample to call)
+	 * @param expectedValues expected values for observations of each exon
+	 * @param stdDeviations std deviations for observations of each exon
+	 * @param parameterFileName name of parameter file
+	 * @param threshold threshold for when an exon is called as not normal 
+	 * @param nSamples number of samples
+	 * @param gamma (to remove)
+	 * @param gammaK Gamma parameter k of coverage
+	 * @param gammaTheta Gamma parameter Theta of coverage
+	 * @param gammaSNPsK Gamma parameter k of heterozygosity
+	 * @param gammaSNPsTheta Gamma parameter Theta of heterozygosity
+	 */
 	public static void getStates(ArrayList<Exon> exons, ArrayList<Exon> expectedValues, 
 			ArrayList<Exon> stdDeviations, String parameterFileName, double threshold, 
 			int nSamples, Gamma gamma, double gammaK, double gammaTheta, double gammaSNPsK, double gammaSNPsTheta)
 	{
 		States = State.initializeStates(parameterFileName);
-		//System.out.println("Number of states: " + States.size());
 
 		ArrayList<HashMap<State, Double>> ForwardProbability = HiddenMarkovModel.computeForwardProbabilities(
 				exons, expectedValues, stdDeviations, nSamples, gamma, gammaK, gammaTheta, gammaSNPsK, gammaSNPsTheta);
@@ -65,15 +81,12 @@ public class HiddenMarkovModel
 					System.out.println("states are wrong "+stateIndex);
 				double prob = ForwardProbability.get(exonIndex).get(HiddenMarkovModel.getStateFromIndex(stateIndex)) 
 				+ BackwardProbability.get(exonIndex).get(HiddenMarkovModel.getStateFromIndex(stateIndex));
-				if (exons.get(exonIndex).posLeft==196146 )/* ||
-						exons.get(exonIndex).posLeft==33846423 ||
-						exons.get(exonIndex).posLeft==37901635 ||
-						exons.get(exonIndex).posLeft==39171084 ||
-						exons.get(exonIndex).posLeft==42280008 ||
-						exons.get(exonIndex).posLeft==42284072)*/
-					System.out.println(exons.get(exonIndex).posLeft+"\t"+stateIndex + "\t" + ForwardProbability.get(exonIndex).get(HiddenMarkovModel.getStateFromIndex(stateIndex)) 
-							+"\t"+ BackwardProbability.get(exonIndex).get(HiddenMarkovModel.getStateFromIndex(stateIndex)) + "\t" + prob);
-				 
+				/* Debugging statement:
+				 * System.out.println(exons.get(exonIndex).posLeft+"\t"+stateIndex + "\t" + 
+				 * ForwardProbability.get(exonIndex).get(HiddenMarkovModel.getStateFromIndex(stateIndex)) +"\t"+ 
+				 * BackwardProbability.get(exonIndex).get(HiddenMarkovModel.getStateFromIndex(stateIndex)) + "\t" + prob); 
+				 */
+				
 				if ( prob > nextMaxProb && !HiddenMarkovModel.getStateFromIndex(stateIndex).equals(normalState) )
 				{
 					nextMaxProb = prob;
@@ -98,26 +111,16 @@ public class HiddenMarkovModel
 				e.likelihoodRatio = -2 * (nextMaxProb - normalProb);
 
 			ChiSquare chi = new ChiSquare(1, RandomEngine.makeDefault());
-			e.pValue = 1 - chi.cdf(e.likelihoodRatio);
-			//cern.jet.random.ChiSquare chi = new cern.jet.random.ChiSquare(0, new cern.jet.random.engine.RandomEngine());
-			//cern.jet.stat.Probability.chiSquare(arg0, arg1)
-			if (exons.get(exonIndex).posLeft== 196146
-					/*||
-					exons.get(exonIndex).posLeft==33846423 ||
-					exons.get(exonIndex).posLeft==37901635 ||
-					exons.get(exonIndex).posLeft==39171084 ||
-					exons.get(exonIndex).posLeft==42280008 ||
-					exons.get(exonIndex).posLeft==42284072 */
-					)
-			{
-				System.out.println(maxState);
-				System.out.println(nextMaxState);
-			}
-			 
+			e.pValue = 1 - chi.cdf(e.likelihoodRatio);			 
 			exons.set(exonIndex, e);
 		}
 	}
 
+	/**
+	 * From state number, figures out the state
+	 * @param stateIndex
+	 * @return state associated with that index
+	 */
 	private static State getStateFromIndex(int stateIndex)
 	{
 		for(State s : States.values())
@@ -128,6 +131,20 @@ public class HiddenMarkovModel
 		return null;
 	}
 
+	/**
+	 * Computes the backward probabilities for the observation
+	 * 
+	 * @param exons observed values of each exon (in sample to call)
+	 * @param expectedValues expected values for observations of each exon
+	 * @param stdDeviations std deviations for observations of each exon
+	 * @param nSamples number of samples
+	 * @param gamma (to remove)
+	 * @param gammaK Gamma parameter k of coverage
+	 * @param gammaTheta Gamma parameter Theta of coverage
+	 * @param gammaSNPsK Gamma parameter k of heterozygosity
+	 * @param gammaSNPsTheta Gamma parameter Theta of heterozygosity
+	 * @return Array of backward probabilities for each state for each exon
+	 */
 	private static ArrayList<HashMap<State, Double>> computeBackwardProbabilities(ArrayList<Exon> exons, 
 			ArrayList<Exon> expectedValues, ArrayList<Exon> stdDeviations, int nSamples, Gamma gamma, 
 			double gammaK, double gammaTheta, double gammaSNPsK, double gammaSNPsTheta)
@@ -209,6 +226,20 @@ public class HiddenMarkovModel
 		return (BackwardProbability);
 			}
 
+	/**
+	 * Computes the forward probabilities for the observation
+	 * 
+	 * @param exons observed values of each exon (in sample to call)
+	 * @param expectedValues expected values for observations of each exon
+	 * @param stdDeviations std deviations for observations of each exon
+	 * @param nSamples number of samples
+	 * @param gamma (to remove)
+	 * @param gammaK Gamma parameter k of coverage
+	 * @param gammaTheta Gamma parameter Theta of coverage
+	 * @param gammaSNPsK Gamma parameter k of heterozygosity
+	 * @param gammaSNPsTheta Gamma parameter Theta of heterozygosity
+	 * @return Array of forward probabilities for each state for each exon
+	 */
 	private static ArrayList<HashMap<State, Double>> computeForwardProbabilities(ArrayList<Exon> exons, ArrayList<Exon> expectedValues, 
 			ArrayList<Exon> stdDeviations, int nSamples, Gamma gamma, 
 			double gammaK, double gammaTheta, double gammaSNPsK, double gammaSNPsTheta)
@@ -227,8 +258,6 @@ public class HiddenMarkovModel
 			Exon e = exons.get(exonIndex);
 			Exon expected = expectedValues.get(exonIndex);
 			Exon stdDev = stdDeviations.get(exonIndex);
-			//if (exonIndex == 106)
-			//System.out.println("$$");
 			HashMap<State, Double> prob = new HashMap<State, Double>();
 			// Fill in exon's state array
 
@@ -257,45 +286,37 @@ public class HiddenMarkovModel
 
 					double logTransProb = Math.log(State.getTransitionProbability(prevState, currentState, lengthOfIntron, e.length()));
 					double p_prime = f_prime + logTransProb;
-					//Double prevSum = sum;
-					//if (sum == 0)
 					if (sum==null)
 						sum = p_prime;
 					else
 						sum = Probability.logSum(sum, p_prime);
-					//if (Double.isInfinite(f_prime) && (prevState.stateName == 0)) // || prevState.stateName == 4) )
-					//if (prevState.stateName == 0)
-					//System.out.println("$$ " + e + "--" + expected + " -- " + f_prime);
-					if (e.posLeft==196146)// || e.posLeft == 1951251) // && currentState.stateName == 2)
-						//if (e.posLeft == 871412)
-					{
-						System.out.println("Fwd: " + e.posLeft + "\t" + currentState.stateName + "\t" + prevState.stateName + "\t" +  
-								f_prime + "\t" + logTransProb + "("+State.getTransitionProbability(prevState, currentState, lengthOfIntron, e.length())+")\t" + p_prime + "\t" + sum);
-						//if ( currentState.stateName == 0)
-						//System.out.println("foo");
-					}
-					//firstTime = false;
+						
+					/* Debugging statement
+					 * System.out.println("Fwd: " + e.posLeft + "\t" + currentState.stateName + "\t" + prevState.stateName 
+					 * + "\t" + f_prime + "\t" + logTransProb + "(" 
+					 * + State.getTransitionProbability(prevState, currentState, lengthOfIntron, e.length()) 
+					 * +")\t" + p_prime + "\t" + sum);  
+					 */
 				}
 				if (sum > 0)
 					System.out.println("Fwd: No log(prob) should be > 0 " + e);
 				if (sum==0)
 					System.out.println("Fwd: Sum == 0\t "+e.posLeft+"\t"+currentState);
 
-				if (e.posLeft == 18628957)// || e.posLeft == 1951251 )// || e.posLeft == 871412)
-					System.out.println(currentState + "\t" + sum + "\t" + State.getLogEmissionProbability(e, expected, stdDev, currentState, nSamples, gamma, gammaK, gammaTheta, gammaSNPsK, gammaSNPsTheta)
-							+ "\tSum: " + (sum + State.getLogEmissionProbability(e, expected, stdDev, currentState, nSamples, gamma, gammaK, gammaTheta, gammaSNPsK, gammaSNPsTheta)));
+				/* Debugging statement: 
+				 * System.out.println(currentState + "\t" + sum + "\t" 
+				 * + State.getLogEmissionProbability(e, expected, stdDev, currentState, nSamples, gamma, gammaK, gammaTheta, gammaSNPsK, gammaSNPsTheta)
+				 * + "\tSum: " 
+				 * + (sum + State.getLogEmissionProbability(e, expected, stdDev, currentState, nSamples, gamma, gammaK, gammaTheta, gammaSNPsK, gammaSNPsTheta)));
+				 */
+					
 				if (Double.isNaN(sum + State.getLogEmissionProbability(e, expected, stdDev, currentState, nSamples, gamma, gammaK, gammaTheta, gammaSNPsK, gammaSNPsTheta))) // deals with the case that probability = 0 and hence log probability is undefined
 					prob.put(currentState, Double.NEGATIVE_INFINITY);
 				else
 					prob.put(currentState, (sum + 
 							State.getLogEmissionProbability(e, expected, stdDev, currentState, nSamples, gamma, 
 									gammaK, gammaTheta, gammaSNPsK, gammaSNPsTheta)));
-				//if (Double.isNaN(State.getLogEmissionProbability(e, expected, stdDev, currentState, nSamples, gamma, gammaK, gammaTheta, gammaSNPsK, gammaSNPsTheta)))
-					//System.out.println("INF: " + e + "\t" + currentState);
 			}
-
-			//if (exonIndex == 56)
-			//System.out.println("Weird exon");
 
 			// if all prob are -Inf, then its useless
 			boolean allInf = true;
@@ -305,7 +326,6 @@ public class HiddenMarkovModel
 			if (allInf)
 				System.out.println(e + "\tAll forward prob are -Inf\t" + expected);
 			ForwardProbability.add(prob);
-			//System.out.println("-----");
 		}	
 		return (ForwardProbability);
 	}

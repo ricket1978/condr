@@ -2,13 +2,17 @@ import java.io.*;
 import java.util.*;
 import cern.jet.random.*;
 
-
+/**
+ * Main calling function of program
+ * Gets data; parses it; computes most likely states
+ * @author arthiramachandran
+ *
+ */
 public class CONDR
 {
 	static ArrayList<Exon> Exons = new ArrayList<Exon>();
 	static ArrayList<Exon> ExpectedValues = new ArrayList<Exon>();
 	static ArrayList<Exon> StdDeviations = new ArrayList<Exon>(); // TODO reconsider a format for these so they're not arrays of exons
-	// maybe extend exon to take n types of inputs?
 
 	static String exonFileName = "";
 	static String outputFileName = "";
@@ -389,6 +393,10 @@ public class CONDR
 		} 
 	}
 
+	/**
+	 * Parses arguments to program
+	 * @param arguments list of arguments
+	 */
 	private static void parseArguments(String arguments[])
 	{
 		/*
@@ -457,6 +465,11 @@ public class CONDR
 
 }
 
+/**
+ * Class to compute where the CNVs are. Mostly useful for verification of simulations
+ * @author arthiramachandran
+ *
+ */
 class CNV
 {
 	public CNV(int posStart)
@@ -471,7 +484,7 @@ class CNV
 	{
 		// more stringent conditions
 		int intersect = Math.min(this.posEnd, g.posEnd) - Math.max(this.posStart, g.posStart);
-		int union = Math.max(this.posEnd, g.posEnd) - Math.min(this.posStart, g.posStart);
+		//int union = Math.max(this.posEnd, g.posEnd) - Math.min(this.posStart, g.posStart);
 		//return (double)intersect/union; 
 		return (double)intersect/Math.min(g.length(), this.length());
 	}

@@ -77,7 +77,7 @@ public class CreateExonFile
 
 					System.out.println("Reading pileup file, calculating coverage and SNPs....");
 					currentTime = System.currentTimeMillis();
-					Pileup.readData(Exons, br, mappedReadsFileName);
+					Pileup.readData(Exons, br);
 					totalReadsReadTime = (System.currentTimeMillis() - currentTime)/1000F;
 				}
 				else
