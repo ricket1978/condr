@@ -19,7 +19,7 @@ average_number_of_reads_in_exon
 The final column is the ground truth state (only relevant for simulations) 
 
 = Options =
- * `-e <exon file>`: name of file with the list of exons in the chromosome
+ * `-e <exon file>`: name of file with the list of exons in the chromosome. Each file should contain values from a single chromosome.
  * `-o <output file>` : name of output file. Default is StdOut
  * `-c <start>-<end>` : start and ending chromosomes analyzed (not used)
  * `-b <baseline files>` : comma separated list of exon files to be used as baselines (no spaces separating the list)
@@ -35,3 +35,9 @@ State
 Probability
 
 = Description =
+The rough outline of steps followed are:
+* read measurements from samples acting as baseline
+* calculate the average measurements
+* read measurements from sample to be called
+* using forward-backward algorithm calculate the most likely state
+* output the measurements with the most likely state
