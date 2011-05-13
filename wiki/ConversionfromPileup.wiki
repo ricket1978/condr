@@ -19,7 +19,7 @@ Initially, the state is the normal state for each exon.
 The final column is the ground truth state (only relevant for simulations)
 
 = Options =
- * `-e <exon file>` : name of file with the list of exons in the chromosome
+ * `-e <exon file>` : name of file with the list of exons in the chromosome. Each file should contain values from a single chromosome.
  * `-pileup <pileup file>` : name of pileup file
  * `-c <start> - <end>` : list of chromosomes being processed (not used)
  * `-t` : print timing metrics
