@@ -20,7 +20,7 @@ The final column is the ground truth state (only relevant for simulations)
 
 = Options =
  * `-e <exon file>`: name of file with the list of exons in the chromosome. Each file should contain values from a single chromosome.
- * `-o <output file>` : name of output file. Default is StdOut
+ * `-o <output file>` : name of output file. Default is StdOut.
  * `-c <start>-<end>` : start and ending chromosomes analyzed (not used)
  * `-b <baseline files>` : comma separated list of exon files to be used as baselines (no spaces separating the list)
  * `-p <parameter file>` : name of file with the values of parameters. [http://code.google.com/p/condr/downloads/detail?name=SimulationParameterFile.04102011.length200000.rate500000&can=2&q= example]. "//" can be used for comments within the file
@@ -41,3 +41,20 @@ The rough outline of steps followed are:
  * read measurements from sample to be called
  * using forward-backward algorithm calculate the most likely state
  * output the measurements with the most likely state
+
+= Example = 
+1. Download and unzip [http://code.google.com/p/condr/downloads/detail?name=referenceSamples.zip&can=2&q= reference samples].
+2. Run CONDR
+{{{
+java -jar -Xmx500M -Xms500m CONDR_04252011.jar 
+-c "10-10" -e "sample.exon.chr10" 
+-t 
+-b "sample1.chr10.exon,sample10.chr10.exon,sample11.chr10.exon,
+sample12.chr10.exon,sample13.chr10.exon,sample14.chr10.exon,
+sample15.chr10.exon,sample16.chr10.exon,sample2.chr10.exon,
+sample3.chr10.exon,sample4.chr10.exon,sample5.chr10.exon,
+sample6.chr10.exon,sample7.chr10.exon,sample8.chr10.exon,sample9.chr10.exon" 
+-p "SimulationParameterFile.04102011.length200000.rate500000" 
+-o "sample.chr10.result" 
+-threshold 0
+}}}
