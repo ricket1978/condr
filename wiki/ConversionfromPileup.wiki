@@ -33,3 +33,23 @@ Exon
 
 = Description =
 ConvertToExonFormat contain the main function. It reads in the list of exons as described by the capture array file (which contains the list of exons captures by that array). It then parses the pileup file and adds each base pair to the appropriate exon and updates the measurements for the exon accordingly.
+
+= Example =
+ # Download and unzip "captureExons.zip"
+ # If input is in pileup format:
+Convert pileup -> exon measurement format
+{{{
+java -Xmx100M -Xms100m -jar PileupToExon_04212011.jar -e "captureExons" -c "1-22" -o $OUT -t -pileup $PILEUP
+}}}
+where 
+   * $OUT is the name of the output file 
+   * $PILEUP is the name of the pileup file to be converted
+ # If input is in BAM format:
+{{{
+samtools pileup -cf $REF $BAM | awk -f pileupFilter.awk | java -Xmx100M -Xms100m -jar PileupToExon_04212011.jar -e "captureExons" -c "1-22" -o $OUT -t
+}}}
+where 
+   * $OUT is the name of the output file 
+   * $BAM is the name of the bam file to be converted
+   * $REF is the human reference is fasta format
+pileupFilter.awk can be found in the downloads section and filters calls based on snp quality and caps the read depth at 1000.
