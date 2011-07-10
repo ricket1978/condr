@@ -39,11 +39,8 @@ ConvertToExonFormat contain the main function. It reads in the list of exons as 
  # If input is in pileup format:
 Convert pileup -> exon measurement format
 {{{
-java -Xmx100M -Xms100m -jar PileupToExon_04212011.jar -e "captureExons" -c "1-22" -o $OUT -t -pileup $PILEUP
+java -Xmx100M -Xms100m -jar PileupToExon_04212011.jar -e "captureExons" -c "10-10" -o "sample.exon" -t -pileup "sample.chr10.pileup"
 }}}
-where 
-   * $OUT is the name of the output file 
-   * $PILEUP is the name of the pileup file to be converted
  # If input is in BAM format:
 {{{
 samtools pileup -cf $REF $BAM | awk -f pileupFilter.awk | java -Xmx100M -Xms100m -jar PileupToExon_04212011.jar -e "captureExons" -c "1-22" -o $OUT -t
