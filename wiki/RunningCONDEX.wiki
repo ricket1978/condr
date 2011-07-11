@@ -46,7 +46,7 @@ The rough outline of steps followed are:
   # Download and unzip [http://code.google.com/p/condr/downloads/detail?name=referenceSamples.zip&can=2&q= reference samples].
   # Run CONDR
 {{{
-java -jar -Xmx500M -Xms500m CONDR_04252011.jar 
+java -jar -Xmx500M -Xms500m CONDEX.jar 
 -c "10-10" -e "sample.exon.chr10" 
 -t 
 -b "sample1.chr10.exon,sample10.chr10.exon,sample11.chr10.exon,
