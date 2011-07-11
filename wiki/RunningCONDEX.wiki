@@ -43,8 +43,8 @@ The rough outline of steps followed are:
  * output the measurements with the most likely state
 
 = Example = 
-1. Download and unzip [http://code.google.com/p/condr/downloads/detail?name=referenceSamples.zip&can=2&q= reference samples].
-2. Run CONDR
+  # Download and unzip [http://code.google.com/p/condr/downloads/detail?name=referenceSamples.zip&can=2&q= reference samples].
+  # Run CONDR
 {{{
 java -jar -Xmx500M -Xms500m CONDR_04252011.jar 
 -c "10-10" -e "sample.exon.chr10" 
