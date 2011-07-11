@@ -43,10 +43,10 @@ java -Xmx100M -Xms100m -jar PileupToExon.jar -e "captureExons" -c "10-10" -o "sa
 }}}
  # If input is in BAM format:
 {{{
-samtools pileup -cf $REF $BAM | awk -f pileupFilter.awk | java -Xmx100M -Xms100m -jar PileupToExon_04212011.jar -e "captureExons" -c "1-22" -o $OUT -t
+samtools pileup -cf <REF> <BAM> | awk -f pileupFilter.awk | java -Xmx100M -Xms100m -jar PileupToExon.jar -e "captureExons" -c "1-22" -o <OUT> -t
 }}}
 where 
-   * $OUT is the name of the output file 
-   * $BAM is the name of the bam file to be converted
-   * $REF is the human reference is fasta format
+   * OUT is the name of the output file 
+   * BAM is the name of the bam file to be converted
+   * REF is the human reference is fasta format
 pileupFilter.awk can be found in the downloads section and filters calls based on snp quality and caps the read depth at 1000.
