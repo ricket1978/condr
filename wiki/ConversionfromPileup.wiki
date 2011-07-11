@@ -19,7 +19,7 @@ Initially, the state is the normal state for each exon.
 The final column is the ground truth state (only relevant for simulations)
 
 = Options =
- * `-e <exon file>` : name of file with the list of exons in the chromosome. Each file should contain values from a single chromosome.
+ * `-e <exon file>` : prefix name of file(s) with the list of exons in the chromosome. Each file should contain values from a single chromosome.
  * `-pileup <pileup file>` : name of pileup file
  * `-c <start> - <end>` : list of chromosomes being processed (not used)
  * `-t` : print timing metrics
@@ -39,7 +39,7 @@ ConvertToExonFormat contain the main function. It reads in the list of exons as 
  # If input is in pileup format:
 Convert pileup -> exon measurement format
 {{{
-java -Xmx100M -Xms100m -jar PileupToExon_04212011.jar -e "captureExons" -c "10-10" -o "sample.exon" -t -pileup "sample.chr10.pileup"
+java -Xmx100M -Xms100m -jar PileupToExon.jar -e "captureExons" -c "10-10" -o "sample.exon" -t -pileup "sample.chr10.pileup"
 }}}
  # If input is in BAM format:
 {{{
