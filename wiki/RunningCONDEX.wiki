@@ -42,6 +42,16 @@ The rough outline of steps followed are:
  * using forward-backward algorithm calculate the most likely state
  * output the measurements with the most likely state
 
+= States =
+For now, the state encoding is:
+{{{
+0 ~ Normal state (copy number = 2)
+1 ~ Homozygous deletion state (copy number = 0)
+2 ~ Heterozygous deletion state (copy number = 1)
+3 ~ Amplification state (copy number = 3)
+4 ~ Amplification state (copy number = 4)
+}}}
+
 = Example = 
   # Download and unzip [http://code.google.com/p/condr/downloads/detail?name=referenceSamples.zip&can=2&q= reference samples].
   # Run CONDR
