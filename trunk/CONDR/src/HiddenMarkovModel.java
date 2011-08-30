@@ -121,7 +121,7 @@ public class HiddenMarkovModel
 	 * @param stateIndex
 	 * @return state associated with that index
 	 */
-	private static State getStateFromIndex(int stateIndex)
+	public static State getStateFromIndex(int stateIndex)
 	{
 		for(State s : States.values())
 		{

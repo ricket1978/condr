@@ -59,16 +59,16 @@ public class ConvertToExonFormat
 				System.out.println("Reading exons file....");
 				currentTime = System.currentTimeMillis();
 				String exonFileNameByChr = "";
-				if (chromosomes.size() == 1)
-					exonFileNameByChr = exonCaptureArrayFileName;
-				else
-					/*
-					 * need to be able to handle exons by separate files
-					 * need to be able to handle exons and one full file
-					 * any specification of names should take place outside of this program
-					 */
-					// TODO: hardcoding in here
-					exonFileNameByChr = exonCaptureArrayFileName + ".chr" + chromosome + ".txt";
+				//if (chromosomes.size() == 1)
+				//exonFileNameByChr = exonCaptureArrayFileName;
+				//else
+				/*
+				 * need to be able to handle exons by separate files
+				 * need to be able to handle exons and one full file
+				 * any specification of names should take place outside of this program
+				 */
+				// TODO: hardcoding in here
+				exonFileNameByChr = exonCaptureArrayFileName + ".chr" + chromosome;
 				Exons = Exon.readExon(exonFileNameByChr, chromosome);
 				totalExonReadTime += (System.currentTimeMillis() - currentTime)/1000F;
 				Exon.sortExons(Exons);
@@ -151,6 +151,8 @@ public class ConvertToExonFormat
 					for (int c = Integer.parseInt(fields[0]); c <= Integer.parseInt(fields[1]); c++)
 					{
 						chromosomes.add(c);
+						//chromosomes.add(fields[0].charAt(0));
+
 					}
 				}
 			}
