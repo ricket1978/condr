@@ -56,6 +56,8 @@ public class Exon
 		{
 			//this.chr  = Integer.parseInt(fields[0]);
 			this.chr  = Integer.parseInt(fields[0].substring(3));
+			//this.chr = fields[0].charAt(fields[0].length()-1);
+
 		}catch(NumberFormatException e)
 		{
 			this.chr = 0; // for now, ignore X, Y, M chromosomes

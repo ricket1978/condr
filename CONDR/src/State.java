@@ -335,7 +335,7 @@ public class State
 	 * @param number
 	 * @return log(number!)
 	 */
-	private static double logFactorial(int number)
+	public static double logFactorial(int number)
 	{
 		// storing some numbers for quicker computation
 		Double value = LOG_FACTORIAL.get(number);

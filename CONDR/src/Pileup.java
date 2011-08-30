@@ -24,6 +24,7 @@ public class Pileup
 		coverage = Integer.parseInt(fields[7]);
 		try{
 			chromosome = Integer.parseInt(fields[0]);
+			//chromosome = fields[0].charAt(fields[0].length()-1);
 		} catch(NumberFormatException nfe)
 		{
 			try{
@@ -100,8 +101,8 @@ public class Pileup
 					Pileups.clear();
 					continue;
 				}
-				else if (e.chr < p.chromosome)
-					break;
+				//else if (e.chr < p.chromosome)
+					//break;
 				while(!Pileups.isEmpty() && e.posLeft > Pileups.get(0).position)
 					// remove until that point
 					Pileups.remove(0);

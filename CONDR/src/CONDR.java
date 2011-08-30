@@ -145,6 +145,7 @@ public class CONDR
 					output.close();
 				}
 
+				/*
 				// calculate confusion matrix
 				int[][] confusionMatrix = new int[HiddenMarkovModel.States.size()][HiddenMarkovModel.States.size()];
 				for(int exonIndex = 0; exonIndex < Exons.size(); exonIndex++)
@@ -274,7 +275,7 @@ public class CONDR
 				for(int state : calledCNVs.keySet())
 					for(CNV cnv : calledCNVs.get(state))
 						System.out.println(state + "\t" + cnv.posStart + "\t" + cnv.posEnd);
-				*/
+				
 				// compare how many have 50% overlap
 				int[] correctlyCalled = new int[HiddenMarkovModel.States.size()];
 				int[] totalCalled = new int[HiddenMarkovModel.States.size()];
