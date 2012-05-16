@@ -1,4 +1,7 @@
 import java.util.ArrayList;
+import java.util.HashMap;
+
+import jsc.distributions.Geometric;
 
 import cern.jet.random.engine.RandomEngine;
 import cern.jet.random.*;
@@ -14,10 +17,17 @@ public class SimulateExonMeasurements
 	static ArrayList<Integer> chromosomes = new ArrayList<Integer>();
 	static ArrayList<Exon> exons = new ArrayList<Exon>();
 
+	static HashMap<String, Poisson> distributions = new HashMap<String, Poisson>();
+
 	public static void main(String args[])
 	{
 		parseArguments( args );
 		HiddenMarkovModel.initialize( args[0] );
+		for(String stateName : HiddenMarkovModel.States.keySet())
+		{
+			Poisson dist = new Poisson(HiddenMarkovModel.States.get(stateName).E_LengthOfState, RandomEngine.makeDefault());
+			distributions.put(stateName, dist);
+		}
 
 		ArrayList<Exon> ExpectedValues = new ArrayList<Exon>();
 		//ArrayList<Exon> NormalizationFactor = new ArrayList<Exon>();
@@ -33,7 +43,7 @@ public class SimulateExonMeasurements
 		while( true)
 		{
 			double randomNumber = Math.random();
-			index = SimulateRegion(ExpectedValues, StdDeviations, "NORMAL", index);
+
 			if (index == -1)
 				break;
 			if (index > ExpectedValues.size() - 10) break;
@@ -42,7 +52,7 @@ public class SimulateExonMeasurements
 			else if  (randomNumber < 2.0/HiddenMarkovModel.States.size())
 				index = SimulateRegion(ExpectedValues, StdDeviations, "HETEROZYGOUS_DELETE", index);
 			//else if  (randomNumber < 3.0/HiddenMarkovModel.States.size())
-				//index = SimulateRegion(ExpectedValues, StdDeviations, "COPY_NEUTRAL_LOH", index);
+			//index = SimulateRegion(ExpectedValues, StdDeviations, "COPY_NEUTRAL_LOH", index);
 			else if (randomNumber < 3.0/HiddenMarkovModel.States.size())
 				index = SimulateRegion(ExpectedValues, StdDeviations, "INSERTION", index);
 			else
@@ -50,7 +60,7 @@ public class SimulateExonMeasurements
 			if (index == -1)
 				break;
 			//else 
-				//index = SimulateRegion(ExpectedValues, StdDeviations, "CHROMATIN_CHANGE", index);
+			//index = SimulateRegion(ExpectedValues, StdDeviations, "CHROMATIN_CHANGE", index);
 		}
 
 		for(int i=0; i<exons.size(); i++)
@@ -61,7 +71,7 @@ public class SimulateExonMeasurements
 					StdDeviations.get(i).SNPs);
 			e.FPKM = getLikelyValue(ExpectedValues.get(i).FPKM*e.state.rpkmRatio, 
 					StdDeviations.get(i).FPKM);
-			System.out.println(e + "\t||" + origFPKM);
+			//System.out.println(e + "\t||" + origFPKM);
 		}
 
 	}
@@ -74,8 +84,16 @@ public class SimulateExonMeasurements
 			return -1;
 		int regionStartPosition = ExpectedValues.get(index).posLeft;
 		//System.out.println(HiddenMarkovModel.States.get(stateName));
-		Poisson dist = new Poisson(HiddenMarkovModel.States.get(stateName).E_LengthOfState, RandomEngine.makeDefault());
-		int regionLength = dist.nextInt();
+		// !!!!!!
+		// check the seed being used - figure out what the seed is..
+		//Poisson dist = new Poisson(HiddenMarkovModel.States.get(stateName).E_LengthOfState, RandomEngine.makeDefault());
+		Poisson dist = distributions.get(stateName);		
+		//int regionLength = dist.nextInt();
+		//double rand = Math.random();
+		//double p = 1.0/HiddenMarkovModel.States.get(stateName).E_LengthOfState;
+		//double regionLength = (Math.log(rand)/Math.log(1.0-p));
+		int regionLength = Distributions.nextGeometric(1.0/HiddenMarkovModel.States.get(stateName).E_LengthOfState, RandomEngine.makeDefault());
+		System.out.println(index + "\t" + stateName + "\t" + regionLength);
 		Exon e = ExpectedValues.get(index);
 		int genomicLength = 0;
 		//for (int i=0; i<10; i++)
@@ -83,16 +101,14 @@ public class SimulateExonMeasurements
 		for(genomicLength = 0; genomicLength <= regionLength; genomicLength = (e.posRight - regionStartPosition))
 		{
 			//if (e.posLeft == 33866544)
-				//System.out.println("##");
+			//System.out.println("##");
 			if (e.SNPs==0.0 && e.FPKM==0.0)
 			{
 				// did this to avoid long stretches of no data where nothing would be called anyways
-				//System.out.println("!!" + e.geneName);
 				e.state = HiddenMarkovModel.States.get("NORMAL");
 			}
 			else
 				e.state = HiddenMarkovModel.States.get(stateName);
-			//System.out.println("#\t"+e);
 			exons.add(e);
 			index ++;
 			if (index >= ExpectedValues.size())

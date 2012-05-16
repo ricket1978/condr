@@ -74,7 +74,7 @@ public class CONDR
 				Exon.sortExons(ExpectedValues);
 				Exon.sortExons(StdDeviations);
 
-				System.out.println("Reading exon with measurements file....");
+				System.out.println("Reading exon with measurements file...." + exonFileName);
 				currentTime = System.currentTimeMillis();
 				Exons = Exon.readAndStoreExonFile(exonFileName, chromosome);
 				totalExonReadTime = (System.currentTimeMillis() - currentTime)/1000F;
