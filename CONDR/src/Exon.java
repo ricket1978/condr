@@ -135,6 +135,7 @@ public class Exon
 			while( (line = br.readLine()) != null)
 			{
 				Exon exon = new Exon(line, false);
+                                //System.out.println("Exon "+exon);
 				exons.add(exon);
 			}
 			br.close();

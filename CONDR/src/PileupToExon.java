@@ -6,22 +6,21 @@ import java.io.InputStreamReader;
 import java.io.Writer;
 import java.util.ArrayList;
 
-/**
- * File Format of output (tab delimited)
- * chromosome exonStart exonEnd geneName FPKM/coverage SNP levels/BAF
- * 
- * .pileup -> .exon
- * @author arthiramachandran
- *
- */
-public class ConvertToExonFormat
+
+public class PileupToExon
 {
 	// TODO: Convert to script maybe? Or leave as Java?
+	/*
+	 * File Format of output (tab delimited)
+	 * chromosome exonStart exonEnd geneName FPKM/coverage SNP levels/BAF
+	 * 
+	 * .pileup -> .exon
+	 * 
+	 */
 	static ArrayList<Exon> Exons = new ArrayList<Exon>();
 
 	static String exonCaptureArrayFileName = "";
-	static String mappedReadsFileName = "";
-	static String vcfFileName = "";
+	static String pileupFileName = "";
 	static String outputFileName = "";
 	static ArrayList<Integer> chromosomes = new ArrayList<Integer>();
 	static boolean printTimingMetrics = false;
@@ -37,7 +36,6 @@ public class ConvertToExonFormat
 		double totalTime;
 		double startTime = System.currentTimeMillis();
 
-
 		parseArguments( args );
 
 		// preprocess input files to find the chromosomal boundaries in terms of line number
@@ -46,57 +44,55 @@ public class ConvertToExonFormat
 		 */
 		try
 		{
+                    	double currentTime = 0, totalExonReadTime = 0, totalReadsReadTime = 0;
 			BufferedReader br = null;
-			if (mappedReadsFileName == "")
+			
+			if (pileupFileName == "")
 				br = new BufferedReader(new InputStreamReader(System.in));
 			else
-				br = new BufferedReader(new FileReader(mappedReadsFileName));
-			BufferedReader br_vcf = new BufferedReader(new FileReader(vcfFileName));
+				br = new BufferedReader(new FileReader(pileupFileName));
 
-			double currentTime = 0, totalExonReadTime = 0, totalReadsReadTime = 0;
-
+			
 			for (int chromosome : chromosomes )
 			{
 				System.out.println("Chromosome " + chromosome);
-				System.out.println("Reading exons file....");
+				System.out.println("Reading exon capture file....");
 				currentTime = System.currentTimeMillis();
 				String exonFileNameByChr = "";
-				/*
-				 * need to be able to handle exons by separate files
-				 * need to be able to handle exons and one full file
-				 * any specification of names should take place outside of this program
-				 */
-				// TODO: hardcoding in here
-				exonFileNameByChr = exonCaptureArrayFileName + ".chr" + chromosome;
+				if (chromosomes.size() == 1)
+					exonFileNameByChr = exonCaptureArrayFileName;
+				else
+					/*
+					 * need to be able to handle exons by separate files
+					 * need to be able to handle exons and one full file
+					 * any specification of names should take place outside of this program
+					 */
+					// TODO: hardcoding in here
+					exonFileNameByChr = exonCaptureArrayFileName + ".chr" + chromosome;
+                                System.out.println("Exon file name: "+ exonFileNameByChr);
+                                Exons = new ArrayList<Exon>();
 				Exons = Exon.readExon(exonFileNameByChr, chromosome);
 				totalExonReadTime += (System.currentTimeMillis() - currentTime)/1000F;
-				Exon.sortExons(Exons);
+				//Exon.sortExons(Exons);
 
 				// TODO add chromosome checks
-				System.out.println("Reading pileup file, calculating coverage....");
-				currentTime = System.currentTimeMillis();
-				Pileup.readData(Exons, br);
-				//br.close();
-				totalReadsReadTime += (System.currentTimeMillis() - currentTime)/1000F;
-				System.out.println("Done reading pileup");
-				
-                                /*
-				System.out.println("Reading vcf file, calculating het SNPs....");
-				currentTime = System.currentTimeMillis();
-				VCF.readData(Exons, br_vcf);
-				totalReadsReadTime += (System.currentTimeMillis() - currentTime)/1000F;
-                                 */
-                                
+				if (usingPileup)
+				{
+					System.out.println("Reading pileup file, calculating coverage and SNPs....");
+					currentTime = System.currentTimeMillis();
+					Pileup.readData(Exons, br);
+					totalReadsReadTime += (System.currentTimeMillis() - currentTime)/1000F;
+				}
+
 				// Print output
 				Writer output = new BufferedWriter(new FileWriter(outputFileName+".chr"+chromosome));
-				System.out.println(outputFileName+".chr"+chromosome);
+				System.out.println("Output file name:" + outputFileName+".chr"+chromosome);
 				for(Exon e : Exons)
 				{
 					//System.out.println(e);
-					output.write(e + "\t" + e.numPileupPositions + "\n");
+					output.write(e + "\n");
 				}
 				output.close();
-				Exons.clear();
 			}
 			// prints the timing metrics to std out
 			if (printTimingMetrics)
@@ -116,23 +112,15 @@ public class ConvertToExonFormat
 	}
 
 
-	/**
-	 * Parses arguments to program
-	 * @param arguments list of arguments
-	 */
 	private static void parseArguments(String arguments[])
 	{
 		/*
 		 * format:
 		 * -e <exonFileName>
-		 * -ex <expressions file>
-		 * -sam <mapped reads, sam file>
-		 * -ref <reference directory>
 		 * -pileup <pileup file>
 		 * -c <chromosomes (start-end)>
 		 * -t (prints timing metrics)
 		 * -o <output file name>
-		 * -b <comma separated baseline file names>
 		 */
 		try {
 			for(int index = 0; index < arguments.length; index ++)
@@ -140,12 +128,10 @@ public class ConvertToExonFormat
 				String arg = arguments[index];
 				if (arg.equals("-e"))
 					exonCaptureArrayFileName = arguments[index + 1];
-				else if (arg.equals("-sam"))
-					mappedReadsFileName = arguments[index + 1];
 				else if (arg.equals("-pileup"))
 				{
 					usingPileup = true;
-					mappedReadsFileName = arguments[index + 1];
+					pileupFileName = arguments[index + 1];
 				}
 				else if (arg.equals("-t"))
 					printTimingMetrics = true;
@@ -158,38 +144,33 @@ public class ConvertToExonFormat
 					{
 						chromosomes.add(c);
 						//chromosomes.add(fields[0].charAt(0));
-
 					}
-				}
-				else if (arg.equals("-vcf"))
-				{
-					vcfFileName = arguments[index + 1];
-					System.out.println("--"+vcfFileName+"--");
 				}
 			}
 
 			if (exonCaptureArrayFileName.equals("") 
 					|| chromosomes.isEmpty()
-					|| outputFileName.equals("")
-					|| vcfFileName.equals("")) 
+					|| outputFileName.equals("")) 
 			{
 				System.err.println("Improper Usage:");
 				System.err.println("java ConvertToExonFormat -e <exonFileName> " +  
 						"-pileup <pileup fileName> " + 
-						"-c <chromosomes (start-end)> " + "-o <output file name>" +
-						"-vcf <vcf filename>");
+						"-c <chromosomes (start-end)> " + "-o <output file name>");
 				System.out.println(exonCaptureArrayFileName);
 				System.out.println(chromosomes);
 				System.out.println(outputFileName);
-				System.out.println(mappedReadsFileName);
+				System.out.println(pileupFileName);
 				System.exit(0);
 				//throw(new Exception("Improper Usage"));
 			}
+			// default is the entire genome
+			//if (chromosomes.isEmpty())
+				//for(int c = 1; c<= 22; c++)
+					//chromosomes.add(c);
 		} catch(Exception e)
 		{
 			System.err.println("Exception: " + e.getMessage());
 			e.printStackTrace();
-			System.exit(0);
 		}
 
 	}

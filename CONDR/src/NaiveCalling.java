@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
 
-import cern.jet.random.Gamma;
-
 
 public class NaiveCalling
 {

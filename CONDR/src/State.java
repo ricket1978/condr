@@ -451,7 +451,7 @@ public class State
 				logProbSNPs = 0; // log 1 = 0; expected = observed = 0 so it fits with the expectation
 		 */
 		
-		return (logProbFPKM + logProbSNPs);
+		return (logProbFPKM); // + logProbSNPs);
 	}
 
 	/**
